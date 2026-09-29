@@ -3538,44 +3538,38 @@ function playPitstopSound(){
   if(p && p.catch) p.catch(()=>{ unduckMusic(duckId); /* blocked until a user gesture unlocks it */ });
 }
 
-/* pickup stinger (repair/fuel/turbo) — three short (~1s) samples, up to 3 playing at
-   once, layered. Each of the 3 <audio> elements is its own "channel" (one sample per
-   channel, so at most one instance of any given sample plays at a time — no phasing
-   from the exact same clip overlapping itself). On every pickup:
-     - if any channel is free (not currently playing), pick randomly among the free
-       ones and play that channel's sample — this is the "pick another random one if
-       one's already playing" behaviour, and naturally caps at 3 simultaneous layered
-       dings since there are only 3 channels/samples;
-     - if all 3 are already playing (the "up to three at once" ceiling is reached) and
-       a 4th pickup happens, stop whichever one started earliest and play it again —
-       "stop the first one and start a new one".
+/* pickup stinger (repair/fuel/turbo) — one random sample plays per pickup, every time,
+   with repeats allowed (ding1,ding1,ding1 or ding2,ding1,ding3 are equally valid — no
+   "don't repeat" rule). The three <audio> elements below are just the preloaded SOURCE
+   library, never played directly; each pickup clones whichever one got picked into a
+   fresh disposable "voice" so the exact same sample can legitimately play more than
+   once at a time. Up to 3 voices can be layered at once; if a pickup happens while 3
+   are already going, the oldest-started voice is stopped to make room for the new one.
    No ducking here (unlike checkpoint/pitstop) — these are meant to layer over the
    engine/music, not interrupt it. */
-const pickupSoundChannels = ['pickupSound1','pickupSound2','pickupSound3'].map(id=>{
-  const el = document.getElementById(id);
-  const ch = { el, playing:false, startedAt:0 };
-  el.addEventListener('ended', ()=>{ ch.playing = false; });
-  return ch;
-});
+const pickupSoundSources = ['pickupSound1','pickupSound2','pickupSound3'].map(id=>document.getElementById(id));
+let pickupVoices = []; // {el, startedAt} — currently-playing clones, oldest first isn't guaranteed order, sorted by startedAt when evicting
 function playPickupSound(){
-  const freeIdx = [];
-  for(let i=0;i<pickupSoundChannels.length;i++){ if(!pickupSoundChannels[i].playing) freeIdx.push(i); }
-  let idx;
-  if(freeIdx.length>0){
-    idx = freeIdx[randInt(0, freeIdx.length-1)];
-  } else {
-    // all three already layered — evict whichever one has been playing longest
-    idx = 0;
-    for(let i=1;i<pickupSoundChannels.length;i++){
-      if(pickupSoundChannels[i].startedAt < pickupSoundChannels[idx].startedAt) idx = i;
-    }
+  const src = pickupSoundSources[randInt(0, pickupSoundSources.length-1)];
+  const voice = src.cloneNode(true);
+  voice.currentTime = 0;
+  const entry = { el: voice, startedAt: performance.now() };
+  const removeVoice = ()=>{
+    const i = pickupVoices.indexOf(entry);
+    if(i>=0) pickupVoices.splice(i,1);
+  };
+  voice.addEventListener('ended', removeVoice, {once:true});
+  if(pickupVoices.length >= 3){
+    // already at the 3-voice ceiling — stop whichever one started earliest to make room
+    let oldest = pickupVoices[0];
+    for(const v of pickupVoices){ if(v.startedAt < oldest.startedAt) oldest = v; }
+    oldest.el.pause();
+    const oi = pickupVoices.indexOf(oldest);
+    if(oi>=0) pickupVoices.splice(oi,1);
   }
-  const ch = pickupSoundChannels[idx];
-  ch.el.currentTime = 0;
-  ch.playing = true;
-  ch.startedAt = performance.now();
-  const p = ch.el.play();
-  if(p && p.catch) p.catch(()=>{ ch.playing = false; /* blocked until a user gesture unlocks it */ });
+  pickupVoices.push(entry);
+  const p = voice.play();
+  if(p && p.catch) p.catch(()=>{ removeVoice(); /* blocked until a user gesture unlocks it */ });
 }
 
 function bindHold(el, onDown, onUp){
