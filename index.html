@@ -445,6 +445,9 @@
 <audio id="pitstopSound" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/057e7c322b438885e90215bd84641b942610e205/pits.mp3" preload="auto" playsinline></audio>
 <audio id="windSound" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/e2bce6da07c01476ef689e76929932572f2a0c91/wind.mp3" loop preload="auto" playsinline></audio>
 <audio id="winnerSound" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/0f88e4ad374fa6bddcfad2eba694c68cfde87e80/winner.mp3" preload="auto" playsinline></audio>
+<audio id="pickupSound1" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/a73c590439aee269202055d7ca73097443504dbe/ding1.mp3" preload="auto" playsinline></audio>
+<audio id="pickupSound2" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/a73c590439aee269202055d7ca73097443504dbe/ding2.mp3" preload="auto" playsinline></audio>
+<audio id="pickupSound3" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/a73c590439aee269202055d7ca73097443504dbe/ding3.mp3" preload="auto" playsinline></audio>
 <button id="btnClearHS" aria-label="Clear high scores"></button>
 <div id="musicBar">
   <button id="btnPrevSong" aria-label="Previous song">◀ PREV</button>
@@ -3535,6 +3538,46 @@ function playPitstopSound(){
   if(p && p.catch) p.catch(()=>{ unduckMusic(duckId); /* blocked until a user gesture unlocks it */ });
 }
 
+/* pickup stinger (repair/fuel/turbo) — three short (~1s) samples, up to 3 playing at
+   once, layered. Each of the 3 <audio> elements is its own "channel" (one sample per
+   channel, so at most one instance of any given sample plays at a time — no phasing
+   from the exact same clip overlapping itself). On every pickup:
+     - if any channel is free (not currently playing), pick randomly among the free
+       ones and play that channel's sample — this is the "pick another random one if
+       one's already playing" behaviour, and naturally caps at 3 simultaneous layered
+       dings since there are only 3 channels/samples;
+     - if all 3 are already playing (the "up to three at once" ceiling is reached) and
+       a 4th pickup happens, stop whichever one started earliest and play it again —
+       "stop the first one and start a new one".
+   No ducking here (unlike checkpoint/pitstop) — these are meant to layer over the
+   engine/music, not interrupt it. */
+const pickupSoundChannels = ['pickupSound1','pickupSound2','pickupSound3'].map(id=>{
+  const el = document.getElementById(id);
+  const ch = { el, playing:false, startedAt:0 };
+  el.addEventListener('ended', ()=>{ ch.playing = false; });
+  return ch;
+});
+function playPickupSound(){
+  const freeIdx = [];
+  for(let i=0;i<pickupSoundChannels.length;i++){ if(!pickupSoundChannels[i].playing) freeIdx.push(i); }
+  let idx;
+  if(freeIdx.length>0){
+    idx = freeIdx[randInt(0, freeIdx.length-1)];
+  } else {
+    // all three already layered — evict whichever one has been playing longest
+    idx = 0;
+    for(let i=1;i<pickupSoundChannels.length;i++){
+      if(pickupSoundChannels[i].startedAt < pickupSoundChannels[idx].startedAt) idx = i;
+    }
+  }
+  const ch = pickupSoundChannels[idx];
+  ch.el.currentTime = 0;
+  ch.playing = true;
+  ch.startedAt = performance.now();
+  const p = ch.el.play();
+  if(p && p.catch) p.catch(()=>{ ch.playing = false; /* blocked until a user gesture unlocks it */ });
+}
+
 function bindHold(el, onDown, onUp){
   el.addEventListener('pointerdown', (e)=>{ e.preventDefault(); onDown(); });
   el.addEventListener('pointerup', onUp);
@@ -4107,15 +4150,18 @@ function update(dt){
         } else if(o.type==='fuel'){
           fuel = clamp(fuel+85,0,100);
           score += 20*scoreMult;
+          playPickupSound();
           o.alive=false; objects.splice(i,1);
         } else if(o.type==='repair'){
           health = clamp(health+60,0,100);
           repairHeadlights(); // repairs both headlights back to fully working
           score += 20*scoreMult;
+          playPickupSound();
           o.alive=false; objects.splice(i,1);
         } else if(o.type==='turbo'){
           turboCharges = Math.min(TURBO_MAX_CHARGES, turboCharges+1); // banked, not fired — press a TURBO button to use it
           score += 20*scoreMult;
+          playPickupSound();
           o.alive=false; objects.splice(i,1);
         }
       }
