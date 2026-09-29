@@ -78,7 +78,7 @@
   /* Custom in-page Yes/No confirmation, used instead of window.confirm() — some mobile
      webviews silently swallow native confirm()/alert() dialogs, so a real on-screen
      panel is the only reliable way to confirm this destructive action everywhere. */
-  #clearHsConfirmWrap{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;background:rgba(10,4,20,0.75);}
+  #clearHsConfirmWrap{position:fixed;inset:0;z-index:1010;display:flex;align-items:center;justify-content:center;background:rgba(10,4,20,0.75);}
   #clearHsConfirmWrap.hidden{display:none !important;}
   #clearHsConfirmPanel{text-align:center;width:320px;max-width:88vw;}
   #clearHsConfirmMsg{font-family:'Press Start 2P',monospace;color:var(--yellow);font-size:clamp(0.8rem,3.4vw,1.05rem);line-height:1.6;margin-bottom:3vmin;}
@@ -87,6 +87,55 @@
   #btnClearHsYes:active{transform:translateY(2px);box-shadow:0 1px 0 #3a1414;}
   #btnClearHsNo{background:#3a2a4a;color:var(--yellow);border:2px solid var(--yellow);box-shadow:0 3px 0 #1f1530;}
   #btnClearHsNo:active{transform:translateY(2px);box-shadow:0 1px 0 #1f1530;}
+
+  /* ---------------- hidden service/test menu (arcade-cabinet operator screen) ----------------
+     Deliberately plain/diagnostic-looking rather than matching the player-facing purple/yellow
+     arcade chrome above — an authentic 1980s cabinet test mode is a stark black text screen,
+     not another game menu. Reuses the same hidden top-right corner button as its only access
+     point (see #btnClearHS above), which no longer wipes high scores directly. */
+  #serviceMenuWrap{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;background:#000;overflow-y:auto;}
+  #serviceMenuWrap.hidden{display:none !important;}
+  #serviceMenuPanel{
+    width:380px;max-width:92vw;max-height:92vh;overflow-y:auto;
+    background:#000;border:2px solid #fff;padding:4vmin 4.5vmin;
+    font-family:'Courier New',Courier,monospace;color:#fff;
+  }
+  #serviceMenuSubtitle{color:#ff3030;text-align:center;font-size:clamp(0.6rem,2.4vw,0.78rem);margin-bottom:3.2vmin;letter-spacing:1px;}
+  .svcRow{display:flex;justify-content:space-between;align-items:baseline;gap:1vmin;padding:1.5vmin 0;border-bottom:1px dashed #3a3a3a;font-size:clamp(0.58rem,2.3vw,0.76rem);}
+  .svcLabel{color:#fff;letter-spacing:0.5px;}
+  .svcValue{color:#ff3030;font-weight:bold;text-align:right;white-space:nowrap;}
+  .svcBtn{
+    display:block;width:100%;margin-top:1.6vmin;
+    font-family:'Courier New',Courier,monospace;font-size:clamp(0.58rem,2.3vw,0.76rem);
+    background:#000;color:#fff;border:2px solid #fff;padding:1.6vmin 1vmin;cursor:pointer;letter-spacing:1px;
+  }
+  .svcBtn:active{background:#1c1c1c;}
+  .svcBtn.danger{color:#ff3030;border-color:#ff3030;}
+  .svcBtn.exit{margin-top:3.2vmin;}
+  #resetStatsConfirmWrap{position:fixed;inset:0;z-index:1010;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.85);}
+  #resetStatsConfirmWrap.hidden{display:none !important;}
+  #resetStatsConfirmPanel{text-align:center;width:320px;max-width:88vw;background:#000;border:2px solid #ff3030;padding:4vmin 4vmin;}
+  #resetStatsConfirmMsg{font-family:'Courier New',Courier,monospace;color:#fff;font-size:clamp(0.65rem,2.8vw,0.85rem);line-height:1.7;margin-bottom:3vmin;letter-spacing:0.5px;}
+
+  /* full-screen classic CRT colour-bar test — hides everything else; the ONLY way out
+     is the same hidden corner button, which returns to the service menu (see JS). */
+  #colorBarWrap{position:fixed;inset:0;z-index:1001;display:flex;}
+  #colorBarWrap.hidden{display:none !important;}
+  .colorBar{flex:1;height:100%;}
+
+  /* green/black CRT scanline overlay — pointer-events:none so it never blocks input,
+     and the highest z-index in the page so it draws over menus AND gameplay alike, per
+     spec. Transparency is applied as plain element opacity (see JS), scaling this one
+     fixed-intensity gradient rather than needing three separate gradients. */
+  #scanlineOverlay{
+    position:fixed;inset:0;z-index:99999;pointer-events:none;display:none;
+    background:repeating-linear-gradient(
+      to bottom,
+      rgba(0,0,0,0.35) 0px, rgba(0,0,0,0.35) 1px,
+      rgba(0,255,70,0.07) 2px, rgba(0,255,70,0.07) 3px
+    );
+  }
+  #scanlineOverlay.on{display:block;}
   /* Fixed-height flex boxes for the icons rather than relying on font-size/line-height
      alone — emoji glyph metrics vary a lot between platforms (Android's emoji font
      renders noticeably taller/lower than desktop), so a margin tuned on one platform
@@ -702,6 +751,65 @@
       <button id="btnClearHsNo" class="eraBtn">NO</button>
     </div>
   </div>
+
+  <!-- hidden operator/service menu — opened by the existing top-right corner button,
+       which no longer clears high scores directly (see #btnClearHS handler in JS) -->
+  <div id="serviceMenuWrap" class="hidden">
+    <div id="serviceMenuPanel">
+      <div id="serviceMenuSubtitle">SERVICE / TEST MENU</div>
+
+      <div class="svcRow">
+        <span class="svcLabel">TOTAL TIME PLAYED</span>
+        <span class="svcValue" id="svcTotalTime">00:00:00</span>
+      </div>
+      <div class="svcRow">
+        <span class="svcLabel">NUMBER OF GAMES</span>
+        <span class="svcValue" id="svcGameCount">0</span>
+      </div>
+      <div class="svcRow">
+        <span class="svcLabel">SCANLINES</span>
+        <span class="svcValue" id="svcScanlineState">OFF</span>
+      </div>
+      <div class="svcRow">
+        <span class="svcLabel">SCANLINE TRANSPARENCY</span>
+        <span class="svcValue" id="svcScanlineAlpha">25%</span>
+      </div>
+      <div class="svcRow">
+        <span class="svcLabel">SCANLINE WIDTH</span>
+        <span class="svcValue" id="svcScanlineWidth">NORMAL</span>
+      </div>
+
+      <button class="svcBtn danger" id="btnSvcResetHS">RESET HIGH SCORES</button>
+      <button class="svcBtn danger" id="btnSvcResetStats">RESET TIME / GAME COUNT</button>
+      <button class="svcBtn" id="btnSvcScanlineToggle">SCANLINES: OFF</button>
+      <button class="svcBtn" id="btnSvcScanlineAlpha">TRANSPARENCY: 25%</button>
+      <button class="svcBtn" id="btnSvcScanlineWidth">WIDTH: NORMAL</button>
+      <button class="svcBtn" id="btnSvcColorBar">COLOUR BAR TEST</button>
+      <button class="svcBtn exit" id="btnSvcExit">EXIT</button>
+    </div>
+  </div>
+
+  <div id="resetStatsConfirmWrap" class="hidden">
+    <div id="resetStatsConfirmPanel">
+      <div id="resetStatsConfirmMsg">RESET TOTAL TIME<br>AND GAME COUNT?</div>
+      <button id="btnResetStatsYes" class="svcBtn danger">YES</button>
+      <button id="btnResetStatsNo" class="svcBtn">NO</button>
+    </div>
+  </div>
+
+  <!-- full-screen CRT colour-bar test — 8 classic SMPTE-style vertical bars -->
+  <div id="colorBarWrap" class="hidden">
+    <div class="colorBar" style="background:#c0c0c0;"></div>
+    <div class="colorBar" style="background:#c0c000;"></div>
+    <div class="colorBar" style="background:#00c0c0;"></div>
+    <div class="colorBar" style="background:#00c000;"></div>
+    <div class="colorBar" style="background:#c000c0;"></div>
+    <div class="colorBar" style="background:#c00000;"></div>
+    <div class="colorBar" style="background:#0000c0;"></div>
+    <div class="colorBar" style="background:#000000;"></div>
+  </div>
+
+  <div id="scanlineOverlay"></div>
 </div>
 
 <script>
@@ -2507,13 +2615,34 @@ function applyAttractPhase(idx){
     }
   }
 }
+function refreshServiceMenuDisplay(){
+  document.getElementById('svcTotalTime').textContent = formatHMS(getTotalPlaySeconds());
+  document.getElementById('svcGameCount').textContent = String(getGamesStarted());
+  document.getElementById('svcScanlineState').textContent = scanlineOn ? 'ON' : 'OFF';
+  document.getElementById('svcScanlineAlpha').textContent = scanlineTransparency+'%';
+  document.getElementById('btnSvcScanlineToggle').textContent = 'SCANLINES: '+(scanlineOn?'ON':'OFF');
+  document.getElementById('btnSvcScanlineAlpha').textContent = 'TRANSPARENCY: '+scanlineTransparency+'%';
+  document.getElementById('svcScanlineWidth').textContent = scanlineWidthLabel();
+  document.getElementById('btnSvcScanlineWidth').textContent = 'WIDTH: '+scanlineWidthLabel();
+}
+function openServiceMenu(){
+  refreshServiceMenuDisplay();
+  document.getElementById('serviceMenuWrap').classList.remove('hidden');
+}
 document.getElementById('btnClearHS').addEventListener('pointerdown', (e)=>{
   // stopPropagation is essential here — #startWrap has its own pointerdown listener
   // that treats any tap on it as "start the game", which this corner button sits on
   // top of but must never trigger.
   e.preventDefault();
   e.stopPropagation();
-  document.getElementById('clearHsConfirmWrap').classList.remove('hidden');
+  // The colour-bar test's ONLY exit is this same corner button, returning to the
+  // service menu rather than re-opening it from scratch or falling through to the game.
+  if(!document.getElementById('colorBarWrap').classList.contains('hidden')){
+    document.getElementById('colorBarWrap').classList.add('hidden');
+    openServiceMenu();
+    return;
+  }
+  openServiceMenu();
 });
 document.getElementById('btnClearHsYes').addEventListener('pointerdown', (e)=>{
   e.preventDefault();
@@ -2538,6 +2667,65 @@ document.getElementById('clearHsConfirmWrap').addEventListener('pointerdown', (e
   }
 });
 
+/* ---------------- hidden service/test menu wiring ---------------- */
+document.getElementById('btnSvcResetHS').addEventListener('pointerdown', (e)=>{
+  e.preventDefault();
+  e.stopPropagation();
+  document.getElementById('serviceMenuWrap').classList.add('hidden');
+  document.getElementById('clearHsConfirmWrap').classList.remove('hidden');
+});
+document.getElementById('btnSvcResetStats').addEventListener('pointerdown', (e)=>{
+  e.preventDefault();
+  e.stopPropagation();
+  document.getElementById('resetStatsConfirmWrap').classList.remove('hidden');
+});
+document.getElementById('btnResetStatsYes').addEventListener('pointerdown', (e)=>{
+  e.preventDefault();
+  e.stopPropagation();
+  resetStats();
+  refreshServiceMenuDisplay();
+  document.getElementById('resetStatsConfirmWrap').classList.add('hidden');
+});
+document.getElementById('btnResetStatsNo').addEventListener('pointerdown', (e)=>{
+  e.preventDefault();
+  e.stopPropagation();
+  document.getElementById('resetStatsConfirmWrap').classList.add('hidden');
+});
+document.getElementById('resetStatsConfirmWrap').addEventListener('pointerdown', (e)=>{
+  if(e.target.id==='resetStatsConfirmWrap'){
+    document.getElementById('resetStatsConfirmWrap').classList.add('hidden');
+  }
+});
+document.getElementById('btnSvcScanlineToggle').addEventListener('pointerdown', (e)=>{
+  e.preventDefault();
+  e.stopPropagation();
+  setScanlineOn(!scanlineOn); // activates immediately, even with the menu still open
+  refreshServiceMenuDisplay();
+});
+document.getElementById('btnSvcScanlineAlpha').addEventListener('pointerdown', (e)=>{
+  e.preventDefault();
+  e.stopPropagation();
+  cycleScanlineTransparency();
+  refreshServiceMenuDisplay();
+});
+document.getElementById('btnSvcScanlineWidth').addEventListener('pointerdown', (e)=>{
+  e.preventDefault();
+  e.stopPropagation();
+  cycleScanlineWidth();
+  refreshServiceMenuDisplay();
+});
+document.getElementById('btnSvcColorBar').addEventListener('pointerdown', (e)=>{
+  e.preventDefault();
+  e.stopPropagation();
+  document.getElementById('serviceMenuWrap').classList.add('hidden');
+  document.getElementById('colorBarWrap').classList.remove('hidden');
+});
+document.getElementById('btnSvcExit').addEventListener('pointerdown', (e)=>{
+  e.preventDefault();
+  e.stopPropagation();
+  document.getElementById('serviceMenuWrap').classList.add('hidden');
+});
+
 // One separate high score table per difficulty AND per game mode (easy/intermediate/hard
 // x race/scenic = 6 tables total), each its own localStorage key, so a Hard run is never
 // compared against Easy scores, and a Scenic run (no obstacles, capped speed) is never
@@ -2560,6 +2748,101 @@ function qualifiesHS(s, diff, mode){
   const l = loadHS(diff, mode);
   return s>0 && (l.length<10 || s > l[l.length-1].score);
 }
+
+/* ---------------- hidden service/test menu: cumulative stats + scanline setting ----------------
+   Cabinet-style operator stats, entirely separate from gameplay/high-score storage above.
+   Play time only accumulates while actually racing (state==='playing' && !attractMode), never
+   during the attract-mode demo, menus, or the 3-2-1-GO countdown. */
+const SVC_TIME_KEY = 'turboPursuitTotalPlaySeconds';
+const SVC_GAMES_KEY = 'turboPursuitGamesStarted';
+const SVC_SCANLINE_ON_KEY = 'turboPursuitScanlineOn';
+const SVC_SCANLINE_ALPHA_KEY = 'turboPursuitScanlineTransparency'; // 25, 50, or 75
+const SVC_SCANLINE_WIDTH_KEY = 'turboPursuitScanlineWidth'; // 0.5, 1, 2, or 3 (multiplier on the base line thickness)
+function getTotalPlaySeconds(){
+  try{ return (parseFloat(localStorage.getItem(SVC_TIME_KEY)) || 0) + svcPlaySecondsPending; }catch(e){ return svcPlaySecondsPending; }
+}
+// Batched rather than writing localStorage every frame: accumulate in memory and flush
+// on a ~2s interval (plus on pagehide, so a closed tab never loses more than that).
+let svcPlaySecondsPending = 0;
+function addPlaySeconds(dt){
+  svcPlaySecondsPending += dt;
+  if(svcPlaySecondsPending >= 2){ flushPlaySeconds(); }
+}
+function flushPlaySeconds(){
+  if(svcPlaySecondsPending<=0) return;
+  try{
+    const cur = parseFloat(localStorage.getItem(SVC_TIME_KEY)) || 0;
+    localStorage.setItem(SVC_TIME_KEY, String(cur+svcPlaySecondsPending));
+    svcPlaySecondsPending = 0;
+  }catch(e){}
+}
+window.addEventListener('pagehide', flushPlaySeconds);
+window.addEventListener('visibilitychange', ()=>{ if(document.hidden) flushPlaySeconds(); });
+function getGamesStarted(){
+  try{ return parseInt(localStorage.getItem(SVC_GAMES_KEY), 10) || 0; }catch(e){ return 0; }
+}
+function incGamesStarted(){
+  try{ localStorage.setItem(SVC_GAMES_KEY, String(getGamesStarted()+1)); }catch(e){}
+}
+function resetStats(){
+  svcPlaySecondsPending = 0;
+  try{ localStorage.setItem(SVC_TIME_KEY, '0'); localStorage.setItem(SVC_GAMES_KEY, '0'); }catch(e){}
+}
+function formatHMS(totalSec){
+  const s = Math.floor(totalSec);
+  const hh = Math.floor(s/3600);
+  const mm = Math.floor((s%3600)/60);
+  const ss = s%60;
+  const pad = n=>String(n).padStart(2,'0');
+  return pad(hh)+':'+pad(mm)+':'+pad(ss);
+}
+let scanlineOn = false;
+let scanlineTransparency = 25; // 25 / 50 / 75, shown & cycled in the service menu
+// Cycle order per spec: what it is now (NORMAL) -> twice as thick -> three times as
+// thick -> half as thick -> back to NORMAL. Each entry scales the base 1px/2px/3px
+// gradient stops below by its multiplier.
+const SCANLINE_WIDTH_STEPS = [
+  {mult:1, label:'NORMAL'},
+  {mult:2, label:'2X THICK'},
+  {mult:3, label:'3X THICK'},
+  {mult:0.5, label:'HALF'}
+];
+let scanlineWidthMult = 1;
+try{ scanlineOn = localStorage.getItem(SVC_SCANLINE_ON_KEY) === '1'; }catch(e){}
+try{ scanlineTransparency = parseInt(localStorage.getItem(SVC_SCANLINE_ALPHA_KEY), 10) || 25; }catch(e){}
+try{ scanlineWidthMult = parseFloat(localStorage.getItem(SVC_SCANLINE_WIDTH_KEY)) || 1; }catch(e){}
+function scanlineWidthLabel(){
+  const step = SCANLINE_WIDTH_STEPS.find(s=>s.mult===scanlineWidthMult);
+  return step ? step.label : 'NORMAL';
+}
+function buildScanlineGradient(mult){
+  const a = (1*mult), b = (2*mult), c = (3*mult);
+  return 'repeating-linear-gradient(to bottom, rgba(0,0,0,0.35) 0px, rgba(0,0,0,0.35) '+a+'px, rgba(0,255,70,0.07) '+b+'px, rgba(0,255,70,0.07) '+c+'px)';
+}
+function applyScanlineOverlay(){
+  const el = document.getElementById('scanlineOverlay');
+  el.classList.toggle('on', scanlineOn);
+  // "transparency" is how see-through the overlay is, so higher transparency = lower opacity
+  el.style.opacity = String(1 - scanlineTransparency/100);
+  el.style.backgroundImage = buildScanlineGradient(scanlineWidthMult);
+}
+function setScanlineOn(on){
+  scanlineOn = on;
+  try{ localStorage.setItem(SVC_SCANLINE_ON_KEY, on?'1':'0'); }catch(e){}
+  applyScanlineOverlay();
+}
+function cycleScanlineTransparency(){
+  scanlineTransparency = scanlineTransparency>=75 ? 25 : scanlineTransparency+25;
+  try{ localStorage.setItem(SVC_SCANLINE_ALPHA_KEY, String(scanlineTransparency)); }catch(e){}
+  applyScanlineOverlay();
+}
+function cycleScanlineWidth(){
+  const idx = SCANLINE_WIDTH_STEPS.findIndex(s=>s.mult===scanlineWidthMult);
+  scanlineWidthMult = SCANLINE_WIDTH_STEPS[(idx+1)%SCANLINE_WIDTH_STEPS.length].mult;
+  try{ localStorage.setItem(SVC_SCANLINE_WIDTH_KEY, String(scanlineWidthMult)); }catch(e){}
+  applyScanlineOverlay();
+}
+applyScanlineOverlay(); // restore the saved scanline setting immediately on load, over every screen
 // era/carIdx are recorded with each entry so the table can show the actual car the
 // player raced with next to their name (renderFullHS() below). time is that run's
 // elapsed seconds, shown formatted (formatTime) between the name and the score. weather/
@@ -2999,6 +3282,7 @@ document.querySelectorAll('.carBtn').forEach(btn=>{
 });
 
 function startCountdown(){
+  incGamesStarted(); // service-menu stat: counts every real run the player commits to, not the attract demo
   resetRun();
   attractMode = false;
   inRunSetupFlow = false; // run is committed now — selectedCarEra/selectedStageEra/player.carIdx are locked in
@@ -3847,6 +4131,8 @@ function update(dt){
   }
 
   if(state!=='playing') { return; }
+
+  if(!attractMode){ addPlaySeconds(dt); } // service-menu stat: real play time only, never the attract-mode demo
 
   if(attractMode){
     attractPhaseT += dt;
