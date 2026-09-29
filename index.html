@@ -970,7 +970,7 @@ function drawCarLights(x, y, carW, carH, tilt, tintKey, tint){
 const opponentLightSpriteCache = {};
 // The brake-light block is drawn live each frame (not baked into the cached sprite
 // below) purely so its brightness can pulse over time without rebuilding the cache.
-const OPP_TAIL_W = carW=>carW*0.14*1.4*2*(4/3)*1.1;   // 35% wider than the previous block
+const OPP_TAIL_W = carW=>carW*0.14*1.4*2*(4/3)*0.95;   // 35% wider than the previous block ai brake light 
 const OPP_TAIL_LEN = carW=>((carW*0.14*1.4*2)*(2/3))/3; // a third as thick as the previous block
 function opponentBeamLen(carW){ return carW*7*1.2*1.3*0.8*0.9; } // 20% shorter, then a further 10%; must match `len` below
 function buildOpponentLightSprite(carW, carH, tint){
