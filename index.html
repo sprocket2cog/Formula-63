@@ -1,4 +1,24 @@
-<!-- IF IN DOUBT FAKE IT C=64 -->
+<!--
+If in doubt, fake it. C=64
+
+The original BASIC program
+that started Grand Rally 63:
+
+10 PRINT CHR$(147)
+20 X = 0 : P = 20 : W = 14
+30 GET A$ : IF A$="A" AND P > 1 THEN P = P - 1
+40 IF A$="D" AND P < 38 THEN P = P + 1
+50 L = 13 + INT(10 * SIN(X))
+60 R = L + W
+70 IF P <= L OR P >= R THEN GOTO 120
+80 PRINT TAB(L);"*";
+90 PRINT TAB(P);"^";
+100 PRINT TAB(R);"*"
+110 X = X + 0.15 : GOTO 30
+120 PRINT : PRINT " *** CRASH! GAME OVER ***"
+130 END
+-->
+
 <!DOCTYPE html>
 <html>
 <head>
