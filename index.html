@@ -543,7 +543,7 @@
   <div id="hud">
     <div class="barRow"><span class="barLabel">FUEL</span><div class="barOuter"><div id="fuelBar" class="barInner"></div></div></div>
     <div class="barRow"><span class="barLabel">CAR</span><div class="barOuter"><div id="healthBar" class="barInner"></div></div></div>
-    <div class="barRow" id="turboBarRow"><span class="barLabel">TURBO</span><div class="barOuter"><div id="turboBar" class="barInner"></div></div></div>
+    <div class="barRow" id="turboBarRow"><span class="barLabel">NITROS</span><div class="barOuter"><div id="turboBar" class="barInner"></div></div></div>
     <div id="scoreRow"><span id="scoreVal">SCORE 0</span><span id="elapsedClock">00:00</span><span id="hiVal">HI 0</span></div>
     <div id="lowFuelFlash">LOW FUEL</div>
     <div id="speedoWrap">
@@ -551,7 +551,7 @@
       <div id="speedoDigital">000</div>
       <div id="speedoUnit">MPH</div>
     </div>
-    <div id="turboFlash">TURBO</div>
+    <div id="turboFlash">NITROS</div>
     <div id="pitstopFlash">PITSTOP AHEAD</div>
     <div id="checkpointFlash">CHECKPOINT BONUS<div id="checkpointFlashSub">+100</div></div>
   </div>
@@ -560,12 +560,12 @@
 
   <div id="controls">
     <div class="ctrlCol">
-      <div class="ctrlBtn turboBtn" id="btnTurboLeft" aria-label="Turbo">T<span class="turboChargeBadge hidden">0</span></div>
+      <div class="ctrlBtn turboBtn" id="btnTurboLeft" aria-label="Nitros">N<span class="turboChargeBadge hidden">0</span></div>
       <div class="ctrlBtn brakeBtn" id="btnBrakeLeft" aria-label="Brake">B</div>
       <div class="ctrlBtn" id="btnLeft">&#9664;</div>
     </div>
     <div class="ctrlCol">
-      <div class="ctrlBtn turboBtn" id="btnTurboRight" aria-label="Turbo">T<span class="turboChargeBadge hidden">0</span></div>
+      <div class="ctrlBtn turboBtn" id="btnTurboRight" aria-label="Nitros">N<span class="turboChargeBadge hidden">0</span></div>
       <div class="ctrlBtn brakeBtn" id="btnBrakeRight" aria-label="Brake">B</div>
       <div class="ctrlBtn" id="btnRight">&#9654;</div>
     </div>
@@ -588,7 +588,7 @@
         <div class="instrRow"><b class="instrIcon" id="instrIconRepair"><span class="objIcon c5"></span><span class="objIcon c6"></span></b> REPAIR CAR</div>
         <div class="instrRow"><b class="instrIcon" id="instrIconFuel"><span class="objIcon c7"></span></b> FUEL</div>
         <div class="instrRow"><b class="instrIcon" id="instrIconHazards"><span class="objIcon c0"></span><span class="objIcon c3"></span></b> HAZARDS</div>
-        <div class="instrRow"><b class="instrIcon">&#127950;&#65039;</b> TURBO BOOST</div>
+        <div class="instrRow"><b class="instrIcon">&#127950;&#65039;</b> NITROS BOOST</div>
       </div>
       <div id="tapPrompt">TAP TO START</div>
     </div>
@@ -2604,7 +2604,8 @@ function spawnDueCrowd(){
 // "pitstop" event: every 1-3 minutes, a line of 4 fuel + 4 repair icons is laid down
 // one shoulder of a wide (non-narrowed) stretch of road, with a red road sign and a
 // flashing HUD warning appearing about 4 seconds' travel before the player reaches it.
-const PITSTOP_PAIR_COUNT = 4; // 4 fuel + 4 repair = 8 icons total, alternating
+const PITSTOP_PAIR_COUNT = 4; // 4 fuel + 4 repair + 4 turbo(nitros) = 12 icons total, in a repeating fuel/repair/nitros cycle
+const PITSTOP_ITEM_COUNT = PITSTOP_PAIR_COUNT*3;
 const PITSTOP_ITEM_GAP = 110; // world-space spacing between consecutive icons — comfortably clear of each other, no overlap
 let pitstopT = rand(60,180);
 let pitstopWarnings = []; // [{warnY, startY, endY}] — drives the HUD flash / prune once passed
@@ -2658,6 +2659,10 @@ function applyRandomAttractScene(){
 function applyAttractPhase(idx){
   attractPhaseIdx = idx;
   attractPhaseT = 0;
+  // While the player is clicking through the run-setup screens (mode/difficulty/flag/
+  // car/stage/conditions/tint/underglow/car select), leave the start/high-score/credits
+  // panels alone — otherwise the idle cycle keeps swapping them in underneath the menus.
+  if(inRunSetupFlow) return;
   const phaseDef = ATTRACT_PHASES[idx];
   const phase = phaseDef.name;
   const startWrap = document.getElementById('startWrap');
@@ -2703,6 +2708,8 @@ function refreshServiceMenuDisplay(){
   document.getElementById('btnSvcScanlineAlpha').textContent = 'TRANSPARENCY: '+scanlineTransparency+'%';
   document.getElementById('btnSvcScanlineWidth').textContent = 'WIDTH: '+scanlineWidthLabel();
   document.getElementById('btnSvcRollingCrt').textContent = 'ROLLING CRT: '+(rollingCrtOn?'ON':'OFF');
+  // restored from localStorage on load, so the label must be synced from the real state
+  document.getElementById('btnSvcMPlusMusic').textContent = 'MATURE SOUNDTRACK: '+(mPlusMusicUnlocked?'ON':'OFF');
 }
 function openServiceMenu(){
   refreshServiceMenuDisplay();
@@ -2727,6 +2734,9 @@ document.getElementById('btnClearHS').addEventListener('pointerdown', (e)=>{
     openServiceMenu();
     return;
   }
+  // a real race (or its countdown) must not keep running invisibly behind the black
+  // service menu — freeze it first (setPaused ignores the attract-mode demo itself)
+  if(!attractMode && (state==='playing' || state==='countdown') && !isPaused) setPaused(true);
   openServiceMenu();
 });
 document.getElementById('btnClearHsYes').addEventListener('pointerdown', (e)=>{
@@ -2898,7 +2908,16 @@ function saveHS(diff, list, mode){
   try{
     const normalized = list.map(entry=>entry && typeof entry==='object' ? {...entry, flag:entry.flag || '🏁'} : entry);
     localStorage.setItem(hsKey(diff, mode), JSON.stringify(normalized));
+    hsCacheKey = ''; // scores changed — force the HUD's cached top score to refresh
   }catch(e){}
+}
+// syncHud() runs every frame; re-reading + JSON-parsing localStorage that often was wasted
+// work. The top score only changes when a table is saved or difficulty/mode changes.
+let hsCacheKey = '', hsCacheVal = 0;
+function cachedTopScore(){
+  const k = difficulty+'|'+gameMode;
+  if(k!==hsCacheKey){ hsCacheKey = k; hsCacheVal = topScore(difficulty, gameMode); }
+  return hsCacheVal;
 }
 function topScore(diff, mode){
   const l = loadHS(diff, mode);
@@ -3536,6 +3555,10 @@ function startCountdown(){
 
 function beginAttract(){
   weather = 'clear'; isNight = false; // the demo always opens on the baseline look
+  // a previous run may have ended mid-crossfade — clear it so the attract screen can't
+  // get stuck on a frozen half-blend (updateWeather never advances it in attract mode)
+  weatherTransition = null;
+  dynamicWeatherEnabled = false;
   updateWindSound();
   resetRun();
   attractMode = true;
@@ -3954,6 +3977,24 @@ document.getElementById('btnMusicToggle').addEventListener('pointerdown', (e)=>{
   toggleAudioMode();
 });
 updateMusicToggleLabel();
+// Hide the music bar (PREV / toggle / NEXT) whenever the service menu — or any screen
+// reached from it (colour bar, test pattern, reset confirmations) — is open, and bring it
+// back the moment all of them are closed again (EXIT, or backing out of a confirmation).
+// Watching the panels' own class changes keeps this in one place instead of patching
+// every open/close path.
+const MUSIC_BAR_HIDERS = ['serviceMenuWrap','colorBarWrap','testPatternWrap','clearHsConfirmWrap','resetStatsConfirmWrap'];
+function syncMusicBarVisibility(){
+  const anyOpen = MUSIC_BAR_HIDERS.some(id=>{
+    const el = document.getElementById(id);
+    return el && !el.classList.contains('hidden');
+  });
+  document.getElementById('musicBar').style.display = anyOpen ? 'none' : '';
+}
+MUSIC_BAR_HIDERS.forEach(id=>{
+  const el = document.getElementById(id);
+  if(el) new MutationObserver(syncMusicBarVisibility).observe(el, {attributes:true, attributeFilter:['class']});
+});
+syncMusicBarVisibility();
 
 /* snow weather ambience: a looping wind track that breathes up and down on its
    own schedule — ramp up over 2-3s, hold at full volume for 2-4s, ramp back
@@ -4372,7 +4413,7 @@ function findWideStretch(anchorY, leadBefore, trailAfter){
   return y; // fallback (very rare): use it anyway rather than never spawning a pitstop
 }
 function spawnPitstop(){
-  const totalItems = PITSTOP_PAIR_COUNT*2; // 8, alternating fuel/repair: ⛽🔧⛽🔧⛽🔧⛽🔧
+  const totalItems = PITSTOP_ITEM_COUNT; // 12: ⛽🔧🏎️ x4 (fuel, repair, nitros)
   const lineSpan = (totalItems-1)*PITSTOP_ITEM_GAP;
   // the road must be pinch-free across the WHOLE forced-straight zone, not just the
   // item line — from straightFromY (warnY, less 200, less the blend) through to
@@ -4409,10 +4450,16 @@ function spawnPitstop(){
 // it's born.
 function spawnDuePitstopItems(){
   for(const w of pitstopWarnings){
-    while(w.nextItemIdx < PITSTOP_PAIR_COUNT*2){
+    while(w.nextItemIdx < PITSTOP_ITEM_COUNT){
       const wy = w.startY + w.nextItemIdx*PITSTOP_ITEM_GAP;
       if(wy - scrollY > H*0.76 + 60) break; // not due yet — try again next frame
-      const type = (w.nextItemIdx%2===0) ? 'fuel' : 'repair'; // ⛽🔧⛽🔧⛽🔧⛽🔧
+      const slot = w.nextItemIdx%3;
+      const type = slot===0 ? 'fuel' : (slot===1 ? 'repair' : 'turbo'); // ⛽🔧🏎️ repeating
+      if(type==='turbo'){
+        objects.push({type, worldY:wy, relOffset:w.relOffset, alive:true, size:26, bob:rand(0,6.28)});
+        w.nextItemIdx++;
+        continue;
+      }
       const spriteCol = type==='fuel' ? OBJ_GASCAN_COL : (Math.random()<0.5 ? OBJ_SPANNER_COL : OBJ_SCREWDRIVER_COL);
       objects.push({type, worldY:wy, relOffset:w.relOffset, alive:true, size:35.28, bob:rand(0,6.28), spriteCol});
       w.nextItemIdx++;
@@ -5434,7 +5481,7 @@ function syncHud(){
     el.classList.toggle('charged', turboCharges>0);
   });
   document.getElementById('scoreVal').textContent = 'SCORE '+Math.floor(score);
-  document.getElementById('hiVal').textContent = 'HI '+Math.max(topScore(difficulty, gameMode), Math.floor(score));
+  document.getElementById('hiVal').textContent = 'HI '+Math.max(cachedTopScore(), Math.floor(score));
   document.getElementById('elapsedClock').textContent = formatTime(elapsed);
   document.getElementById('turboFlash').classList.toggle('show', turboT>0);
   const pitstopWarnActive = pitstopWarnings.some(w => scrollY >= w.warnY && scrollY <= w.endY);
@@ -5450,7 +5497,7 @@ function updateCountdownOverlay(){
   const txt = document.getElementById('countdownText');
   if(state!=='countdown'){ wrap.style.display='none'; return; }
   wrap.style.display='flex';
-  const stepDur=0.72;
+  const stepDur=0.87; // must match update()'s countdown stepDur
   const localT = countdownT - countdownStep*stepDur;
   const labels=['3','2','1','GO!'];
   const label = labels[Math.min(countdownStep,3)];
