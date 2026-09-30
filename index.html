@@ -1,24 +1,4 @@
-<!--
-If in doubt, fake it. C=64
-
-The original BASIC program
-that started Grand Rally 63:
-
-10 PRINT CHR$(147)
-20 X = 0 : P = 20 : W = 14
-30 GET A$ : IF A$="A" AND P > 1 THEN P = P - 1
-40 IF A$="D" AND P < 38 THEN P = P + 1
-50 L = 13 + INT(10 * SIN(X))
-60 R = L + W
-70 IF P <= L OR P >= R THEN GOTO 120
-80 PRINT TAB(L);"*";
-90 PRINT TAB(P);"^";
-100 PRINT TAB(R);"*"
-110 X = X + 0.15 : GOTO 30
-120 PRINT : PRINT " *** CRASH! GAME OVER ***"
-130 END
--->
-
+<!-- IF IN DOUBT FAKE IT C=64 -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -142,6 +122,12 @@ that started Grand Rally 63:
   #colorBarWrap{position:fixed;inset:0;z-index:1001;display:flex;}
   #colorBarWrap.hidden{display:none !important;}
   .colorBar{flex:1;height:100%;}
+
+  /* full-screen test-pattern image — same exit rule as the colour-bar test (hidden
+     corner button only, returning to the service menu). Scaled to fit without cropping. */
+  #testPatternWrap{position:fixed;inset:0;z-index:1001;display:flex;align-items:center;justify-content:center;background:#000;}
+  #testPatternWrap.hidden{display:none !important;}
+  #testPatternImg{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;}
 
   /* green/black CRT scanline overlay — pointer-events:none so it never blocks input,
      and the highest z-index in the page so it draws over menus AND gameplay alike, per
@@ -505,18 +491,22 @@ that started Grand Rally 63:
 </style>
 </head>
 <body>
-<audio id="bgMusic" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/f6f14b2acba3963a50cedbb9debda60c068035be/Racer.mp3" loop preload="auto" playsinline></audio>
-<audio id="carSound" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/7c834febbdc2da6daaa14db0d6dbdbc257e53a3e/car.wav" loop preload="auto" playsinline></audio>
-<audio id="goSound" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/733f09e409fa1e60776dbfcd3946d41349e783dc/go.mp3" preload="auto" playsinline></audio>
-<audio id="lowFuelSound" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/43a648ace8ef4c508d361b59a52ce7f1e7001d6a/lowfuel.mp3" loop preload="auto" playsinline></audio>
-<audio id="thunderSound" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/34431e786411f46779b44e3df454bc9e659640f9/thunder.mp3" preload="auto" playsinline></audio>
-<audio id="checkpointSound" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/a063f25f6933ecc4e5941a9c4f2417079b104875/checkpoint.mp3" preload="auto" playsinline></audio>
-<audio id="pitstopSound" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/057e7c322b438885e90215bd84641b942610e205/pits.mp3" preload="auto" playsinline></audio>
-<audio id="windSound" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/e2bce6da07c01476ef689e76929932572f2a0c91/wind.mp3" loop preload="auto" playsinline></audio>
-<audio id="winnerSound" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/0f88e4ad374fa6bddcfad2eba694c68cfde87e80/winner.mp3" preload="auto" playsinline></audio>
+<audio id="bgMusic" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/Racer.mp3" loop preload="auto" playsinline></audio>
+<audio id="carSound" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/car.wav" loop preload="auto" playsinline></audio>
+<audio id="goSound" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/go.mp3" preload="auto" playsinline></audio>
+<audio id="lowFuelSound" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/lowfuel.mp3" loop preload="auto" playsinline></audio>
+<audio id="thunderSound" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/thunder.mp3" preload="auto" playsinline></audio>
+<audio id="checkpointSound" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/checkpoint.mp3" preload="auto" playsinline></audio>
+<audio id="pitstopSound" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/pits.mp3" preload="auto" playsinline></audio>
+<audio id="windSound" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/wind.mp3" loop preload="auto" playsinline></audio>
+<audio id="winnerSound" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/winner.mp3" preload="auto" playsinline></audio>
 <audio id="pickupSound1" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/ding1.mp3" preload="auto" playsinline></audio>
 <audio id="pickupSound2" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/ding2.mp3" preload="auto" playsinline></audio> 
 <audio id="pickupSound3" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/ding3.mp3" preload="auto" playsinline></audio>
+<audio id="impactSound1" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/impact1.mp3" preload="auto" playsinline></audio>
+<audio id="impactSound2" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/impact2.mp3" preload="auto" playsinline></audio>
+<audio id="impactSound3" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/impact3.mp3" preload="auto" playsinline></audio>
+<audio id="crashSound" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/crash1.mp3" preload="auto" playsinline></audio>
 <button id="btnClearHS" aria-label="Clear high scores"></button>
 <div id="musicBar">
   <button id="btnPrevSong" aria-label="Previous song">◀ PREV</button>
@@ -786,18 +776,6 @@ that started Grand Rally 63:
         <span class="svcLabel">NUMBER OF GAMES</span>
         <span class="svcValue" id="svcGameCount">0</span>
       </div>
-      <div class="svcRow">
-        <span class="svcLabel">SCANLINES</span>
-        <span class="svcValue" id="svcScanlineState">OFF</span>
-      </div>
-      <div class="svcRow">
-        <span class="svcLabel">SCANLINE TRANSPARENCY</span>
-        <span class="svcValue" id="svcScanlineAlpha">25%</span>
-      </div>
-      <div class="svcRow">
-        <span class="svcLabel">SCANLINE WIDTH</span>
-        <span class="svcValue" id="svcScanlineWidth">NORMAL</span>
-      </div>
 
       <button class="svcBtn danger" id="btnSvcResetHS">RESET HIGH SCORES</button>
       <button class="svcBtn danger" id="btnSvcResetStats">RESET TIME / GAME COUNT</button>
@@ -805,6 +783,7 @@ that started Grand Rally 63:
       <button class="svcBtn" id="btnSvcScanlineAlpha">TRANSPARENCY: 25%</button>
       <button class="svcBtn" id="btnSvcScanlineWidth">WIDTH: NORMAL</button>
       <button class="svcBtn" id="btnSvcColorBar">COLOUR BAR TEST</button>
+      <button class="svcBtn" id="btnSvcTestPattern">TEST PATTERN</button>
       <button class="svcBtn exit" id="btnSvcExit">EXIT</button>
     </div>
   </div>
@@ -827,6 +806,13 @@ that started Grand Rally 63:
     <div class="colorBar" style="background:#c00000;"></div>
     <div class="colorBar" style="background:#0000c0;"></div>
     <div class="colorBar" style="background:#000000;"></div>
+  </div>
+
+  <!-- full-screen test-pattern image, same GitHub path as the sprite sheets/audio -->
+  <div id="testPatternWrap" class="hidden">
+    <img id="testPatternImg" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/testPattern.png" alt=""
+      onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+    <div id="testPatternMissing" style="display:none;color:#fff;font-family:'Courier New',Courier,monospace;font-size:clamp(0.7rem,3vw,0.95rem);text-align:center;letter-spacing:1px;">TEST PATTERN IMAGE<br>NOT FOUND</div>
   </div>
 
   <div id="scanlineOverlay"></div>
@@ -2457,6 +2443,7 @@ let speedHealthSmoothed = 100; // ramps toward `health`, only for the speed form
 let speedEdgeSlowSmoothed = 1; // ramps between 1 (normal) and 0.55 (on the edge)
 let aiDamageWindowT = 0; // seconds left in the current AI-collision damage window (0 = no window open)
 let aiDamageWindowTotal = 0; // health already taken from AI collisions within that window, capped at 20
+let crashSoundCooldown = 0; // seconds left before crash1 can play again (car-vs-car collision)
 let lowFuelVibT = 0; // countdown to the next low-fuel pulse vibration
 let wasLowFuel = false; // edge-detects the moment fuel first drops into the low band, to (re)start the boost
 const FUEL_BOOST_DURATION = 10; // seconds the low-fuel rescue spawns are spread across
@@ -2638,11 +2625,10 @@ function applyAttractPhase(idx){
 function refreshServiceMenuDisplay(){
   document.getElementById('svcTotalTime').textContent = formatHMS(getTotalPlaySeconds());
   document.getElementById('svcGameCount').textContent = String(getGamesStarted());
-  document.getElementById('svcScanlineState').textContent = scanlineOn ? 'ON' : 'OFF';
-  document.getElementById('svcScanlineAlpha').textContent = scanlineTransparency+'%';
+  // Scanline on/off, transparency and width are shown only on their own buttons below
+  // (SCANLINES: ON, TRANSPARENCY: 25%, WIDTH: NORMAL) — no separate info rows for them.
   document.getElementById('btnSvcScanlineToggle').textContent = 'SCANLINES: '+(scanlineOn?'ON':'OFF');
   document.getElementById('btnSvcScanlineAlpha').textContent = 'TRANSPARENCY: '+scanlineTransparency+'%';
-  document.getElementById('svcScanlineWidth').textContent = scanlineWidthLabel();
   document.getElementById('btnSvcScanlineWidth').textContent = 'WIDTH: '+scanlineWidthLabel();
 }
 function openServiceMenu(){
@@ -2655,10 +2641,16 @@ document.getElementById('btnClearHS').addEventListener('pointerdown', (e)=>{
   // top of but must never trigger.
   e.preventDefault();
   e.stopPropagation();
-  // The colour-bar test's ONLY exit is this same corner button, returning to the
-  // service menu rather than re-opening it from scratch or falling through to the game.
+  // The colour-bar test and test-pattern screens' ONLY exit is this same corner button,
+  // returning to the service menu rather than re-opening it from scratch or falling
+  // through to the game.
   if(!document.getElementById('colorBarWrap').classList.contains('hidden')){
     document.getElementById('colorBarWrap').classList.add('hidden');
+    openServiceMenu();
+    return;
+  }
+  if(!document.getElementById('testPatternWrap').classList.contains('hidden')){
+    document.getElementById('testPatternWrap').classList.add('hidden');
     openServiceMenu();
     return;
   }
@@ -2739,6 +2731,12 @@ document.getElementById('btnSvcColorBar').addEventListener('pointerdown', (e)=>{
   e.stopPropagation();
   document.getElementById('serviceMenuWrap').classList.add('hidden');
   document.getElementById('colorBarWrap').classList.remove('hidden');
+});
+document.getElementById('btnSvcTestPattern').addEventListener('pointerdown', (e)=>{
+  e.preventDefault();
+  e.stopPropagation();
+  document.getElementById('serviceMenuWrap').classList.add('hidden');
+  document.getElementById('testPatternWrap').classList.remove('hidden');
 });
 document.getElementById('btnSvcExit').addEventListener('pointerdown', (e)=>{
   e.preventDefault();
@@ -3010,6 +3008,7 @@ function resetRun(){
   speedEdgeSlowSmoothed = 1;
   aiDamageWindowT = 0;
   aiDamageWindowTotal = 0;
+  crashSoundCooldown = 0;
   crowdQueue = [];
   crowdT = rand(2,6);
   isPaused = false;
@@ -3608,16 +3607,16 @@ function unduckMusic(id){
 
 // one music track per era, index-aligned with BIOME_SETS/CAR_SHEET_FILES
 const ERA_MUSIC = [
-  'https://raw.githubusercontent.com/sprocket2cog/Formula-63/f6f14b2acba3963a50cedbb9debda60c068035be/Racer.mp3',        // 0: 1963 Formula
-  'https://raw.githubusercontent.com/sprocket2cog/Formula-63/9fa5a63d444a013e0e10b8d00bba0b2e099ef545/1990.mp3',        // 1: 1983 Group C
-  'https://raw.githubusercontent.com/sprocket2cog/Formula-63/f372c78a9ec9bf54f13871435609d49de4bf50e8/askme.mp3',      // 2: 1990 Japan Domestic
-  'https://raw.githubusercontent.com/sprocket2cog/Formula-63/5b04b9c52203da3a4e6dae26a062b8dd00ad04fe/1930.mp3',        // 3: 1930 1000 Mile
-  'https://raw.githubusercontent.com/sprocket2cog/Formula-63/e4fde308e18bf82a8574418c96815e097cde9986/Ground%20effect%20.mp3', // 4: 2037 Concept Class
-  'https://raw.githubusercontent.com/sprocket2cog/Formula-63/03df7fdac8d549cec0ae08092fd2924d8f363eaa/Tunnel.mp3',      // 5: 3027 Wiped Out
-  'https://raw.githubusercontent.com/sprocket2cog/Formula-63/68f0c24f7dae9a78dda27329da90264ee252ec8b/Star%20racer.mp3', // 6: 2000 Super Karts
-  'https://raw.githubusercontent.com/sprocket2cog/Formula-63/9fa5a63d444a013e0e10b8d00bba0b2e099ef545/1990.mp3',       // 7: 2026 Sidecar (reuses Group C's track)
-  'https://raw.githubusercontent.com/sprocket2cog/Formula-63/40f0b8180ab4c71aba2ce130605615864acb7f0f/1955.mp3',       // 8: 1955 Le Mans Prototype
-  'https://raw.githubusercontent.com/sprocket2cog/Formula-63/a0210d6726b92efdf88f51fe47a595206cd57d50/Midnight%20monster.mp3' // 9: 1986 Group B Rally
+  'https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/Racer.mp3',        // 0: 1963 Formula
+  'https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/1990.mp3',        // 1: 1983 Group C
+  'https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/askme.mp3',      // 2: 1990 Japan Domestic
+  'https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/1930.mp3',        // 3: 1930 1000 Mile
+  'https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/Ground%20effect%20.mp3', // 4: 2037 Concept Class
+  'https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/Tunnel.mp3',      // 5: 3027 Wiped Out
+  'https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/Star%20racer.mp3', // 6: 2000 Super Karts
+  'https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/1990.mp3',       // 7: 2026 Sidecar (reuses Group C's track)
+  'https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/1955.mp3',       // 8: 1955 Le Mans Prototype
+  'https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/Midnight%20monster.mp3' // 9: 1986 Group B Rally
 ];
 function setEraMusic(idx){
   const track = ERA_MUSIC[idx] || ERA_MUSIC[0];
@@ -3874,6 +3873,50 @@ function playPickupSound(){
   pickupVoices.push(entry);
   const p = voice.play();
   if(p && p.catch) p.catch(()=>{ removeVoice(); /* blocked until a user gesture unlocks it */ });
+}
+
+/* obstacle-hit stinger (drum/barrier) — same random-one-of-three, clone-and-layer
+   pattern as playPickupSound() above, capped at 3 overlapping voices the same way.
+   Missing/unreachable audio files fail silently here exactly like every other sound
+   in the game (the 'error' event on the <audio> element and the play() rejection are
+   both just swallowed) — never throws, never breaks the collision it's attached to. */
+const impactSoundSources = ['impactSound1','impactSound2','impactSound3'].map(id=>document.getElementById(id));
+let impactVoices = [];
+function playImpactSound(){
+  const src = impactSoundSources[randInt(0, impactSoundSources.length-1)];
+  const voice = src.cloneNode(true);
+  voice.currentTime = 0;
+  const entry = { el: voice, startedAt: performance.now() };
+  const removeVoice = ()=>{
+    const i = impactVoices.indexOf(entry);
+    if(i>=0) impactVoices.splice(i,1);
+  };
+  voice.addEventListener('ended', removeVoice, {once:true});
+  voice.addEventListener('error', removeVoice, {once:true});
+  if(impactVoices.length >= 3){
+    let oldest = impactVoices[0];
+    for(const v of impactVoices){ if(v.startedAt < oldest.startedAt) oldest = v; }
+    oldest.el.pause();
+    const oi = impactVoices.indexOf(oldest);
+    if(oi>=0) impactVoices.splice(oi,1);
+  }
+  impactVoices.push(entry);
+  const p = voice.play();
+  if(p && p.catch) p.catch(()=>{ removeVoice(); /* file missing, blocked, etc — fail silently */ });
+}
+
+/* car-vs-car crash stinger — plays at most once per second of CONTINUOUS collision:
+   playCrashSound() is only ever called while the player and an AI car are still
+   overlapping (see the update loop), gated there by crashSoundCooldown so it fires
+   immediately on first contact, then again every ~1s for as long as the cars keep
+   hitting, and stops the moment they separate. Single shared element (no layering
+   needed — only one car-vs-player collision is ever "current" at a time), same
+   fire-and-forget/fail-silent pattern as playGoSound(). */
+const crashSound = document.getElementById('crashSound');
+function playCrashSound(){
+  crashSound.currentTime = 0;
+  const p = crashSound.play();
+  if(p && p.catch) p.catch(()=>{ /* file missing, blocked, etc — fail silently */ });
 }
 
 function bindHold(el, onDown, onUp){
@@ -4431,6 +4474,7 @@ function update(dt){
         if(o.type==='obstacle'){
           health = clamp(health-5.1,0,100); // 6 * 0.85 — damage reduced 15% across all events/difficulties
           registerHeadlightHit();
+          if(!attractMode) playImpactSound(); // random impact1/2/3 — drums and barriers share the same set
           o.alive=false;
           objects.splice(i,1);
           shakeT = Math.max(shakeT,0.28);
@@ -4447,6 +4491,13 @@ function update(dt){
           const push = player.x < ox ? -1 : 1;
           player.x += push*4;
           if(!attractMode) vibrate(80);
+          // crash1 plays immediately on first contact, then at most once per second for
+          // as long as the cars keep hitting (cooldown decremented in update() below) —
+          // never on the attract-mode demo.
+          if(!attractMode && crashSoundCooldown<=0){
+            playCrashSound();
+            crashSoundCooldown = 1;
+          }
         } else if(o.type==='fuel'){
           fuel = clamp(fuel+85,0,100);
           score += 20*scoreMult;
@@ -4482,6 +4533,7 @@ function update(dt){
 
   if(shakeT>0) shakeT = Math.max(0, shakeT-dt);
   if(aiDamageWindowT>0){ aiDamageWindowT -= dt; if(aiDamageWindowT<=0) aiDamageWindowTotal = 0; }
+  if(crashSoundCooldown>0) crashSoundCooldown -= dt;
 
   resolveAiSeparation(playerScreenY);
 }
