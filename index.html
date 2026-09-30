@@ -40,13 +40,13 @@
     letter-spacing:1px;
   }
 
-  #startWrap,#nameWrap,#hsWrap,#modeWrap,#difficultyWrap,#eraWrap,#stageWrap,#conditionsWrap,#lightTintWrap,#underglowWrap,#carWrap{
+  #startWrap,#nameWrap,#hsWrap,#modeWrap,#difficultyWrap,#flagWrap,#eraWrap,#stageWrap,#conditionsWrap,#lightTintWrap,#underglowWrap,#carWrap{
     position:fixed;inset:0;z-index:50;
     display:flex;align-items:center;justify-content:center;
     background:rgba(10,4,20,0.55);
     overflow-y:auto;
   }
-  #startWrap.hidden,#nameWrap.hidden,#hsWrap.hidden,#modeWrap.hidden,#difficultyWrap.hidden,#eraWrap.hidden,#stageWrap.hidden,#conditionsWrap.hidden,#lightTintWrap.hidden,#underglowWrap.hidden,#carWrap.hidden{display:none;}
+  #startWrap.hidden,#nameWrap.hidden,#hsWrap.hidden,#modeWrap.hidden,#difficultyWrap.hidden,#flagWrap.hidden,#eraWrap.hidden,#stageWrap.hidden,#conditionsWrap.hidden,#lightTintWrap.hidden,#underglowWrap.hidden,#carWrap.hidden{display:none;}
   .hidden{display:none !important;}
 
   #startPanel{max-width:94vw;width:480px;text-align:center;}
@@ -74,7 +74,8 @@
     box-shadow:0 3px 0 var(--purple-dk);letter-spacing:0.02em;white-space:nowrap;
   }
   #musicBar button:active{transform:translateY(2px);box-shadow:0 1px 0 var(--purple-dk);}
-  #btnMusicToggle{font-size:clamp(0.55rem,2vw,0.7rem);padding:1.4vmin 2.6vmin;}
+  #btnMusicToggle{font-size:clamp(0.55rem,2vw,0.7rem);padding:1.4vmin 2.6vmin;width:11em;box-sizing:border-box;display:flex;align-items:center;justify-content:center;}
+  #btnMusicToggle .audioIcon{position:relative;top:-2px;}
   /* Custom in-page Yes/No confirmation, used instead of window.confirm() — some mobile
      webviews silently swallow native confirm()/alert() dialogs, so a real on-screen
      panel is the only reliable way to confirm this destructive action everywhere. */
@@ -96,7 +97,7 @@
   #serviceMenuWrap{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;background:#000;overflow-y:auto;}
   #serviceMenuWrap.hidden{display:none !important;}
   #serviceMenuPanel{
-    width:380px;max-width:92vw;max-height:92vh;overflow-y:auto;
+    width:380px;max-width:92vw;max-height:96vh;overflow-y:auto;
     background:#000;border:2px solid #fff;padding:4vmin 4.5vmin;
     font-family:'Courier New',Courier,monospace;color:#fff;
   }
@@ -111,6 +112,7 @@
   }
   .svcBtn:active{background:#1c1c1c;}
   .svcBtn.danger{color:#ff3030;border-color:#ff3030;}
+  #btnSvcMPlusMusic{color:#ff3030;border-color:#ff3030;}
   .svcBtn.exit{margin-top:3.2vmin;}
   #resetStatsConfirmWrap{position:fixed;inset:0;z-index:1010;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.85);}
   #resetStatsConfirmWrap.hidden{display:none !important;}
@@ -142,6 +144,14 @@
     );
   }
   #scanlineOverlay.on{display:block;}
+  /* red/white/cyan rolling CRT beam, controlled from the service menu */
+  #rollingCrtOverlay{
+    position:fixed;left:0;right:0;top:-6%;height:14px;pointer-events:none;z-index:99998;display:none;
+    background:linear-gradient(to bottom,transparent,rgba(255,60,60,.5) 30%,rgba(255,255,255,.85) 50%,rgba(70,220,255,.5) 70%,transparent);
+    opacity:.65;mix-blend-mode:screen;filter:blur(1.5px);animation:rollingCrtDown 5.85s linear infinite;
+  }
+  #rollingCrtOverlay.on{display:block;}
+  @keyframes rollingCrtDown{0%{top:-6%}100%{top:106%}}
   /* Fixed-height flex boxes for the icons rather than relying on font-size/line-height
      alone — emoji glyph metrics vary a lot between platforms (Android's emoji font
      renders noticeably taller/lower than desktop), so a margin tuned on one platform
@@ -179,7 +189,7 @@
   .objIcon{
     --objIconW:1.55em;
     display:inline-block;width:var(--objIconW);height:calc(var(--objIconW)*193/176);
-    background-image:url('objects.png');background-repeat:no-repeat;
+    background-image:url('https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/objects.png');background-repeat:no-repeat;
     background-size:calc(var(--objIconW)*8) auto;
   }
   .objIcon.c0{background-position:calc(var(--objIconW)*-0) 0;}
@@ -198,15 +208,29 @@
     text-shadow:0 0 6px rgba(255,59,59,0.6);margin-bottom:0.3vmin;}
   #hsModeLabel.scenicMode{color:#3adb5c;text-shadow:0 0 6px rgba(58,219,92,0.6);}
   #hsDiffLabel{color:var(--cyan,#1adfe0);font-size:0.55rem;letter-spacing:2px;margin-bottom:1.2vmin;}
-  .hsRow{display:flex;justify-content:space-between;font-size:clamp(0.535rem,2.2vw,0.735rem);
-    padding:0.6vmin 0;border-bottom:1px dashed rgba(255,214,10,0.25);}
-  .hsRow span.rank{color:var(--yellow);width:calc(2em + 5px);flex-shrink:0;}
-  .hsRow span.nm{flex:1;text-align:left;display:flex;align-items:center;gap:0;}
-  .hsRow span.tm{color:#f1e6ff;margin-right:0;}
-  .hsRow .condIcons{display:inline-flex;flex-direction:row;gap:0.15em;margin-left:0;line-height:1;
-    font-size:calc(1.1em - 4px);}
-  .hsRow span.sc{color:var(--yellow);}
+  .hsRow{display:flex;align-items:center;justify-content:flex-start;font-size:calc(clamp(0.535rem,2.2vw,0.735rem) - 2px);
+    padding:0.6vmin 0;border-bottom:1px dashed rgba(255,214,10,0.25);white-space:nowrap;overflow:hidden;}
+  .hsRow span.rank{color:var(--yellow);width:calc((2em + 5px)*0.667);flex:0 0 calc((2em + 5px)*0.667);}
+  .hsRow span.nm{flex:1 1 auto;min-width:0;text-align:left;display:flex;align-items:center;gap:0;overflow:hidden;white-space:nowrap;}
+  .hsRow span.flag{font-size:1.18em;line-height:1;flex:0 0 auto;margin-right:0.2em;}
+  .hsRow span.tm{color:#f1e6ff;flex:0 0 auto;margin-left:1px;margin-right:0;}
+  .hsRow .condIcons{display:inline-flex;flex-direction:row;gap:0.1em;margin-left:0;line-height:1;
+    font-size:calc(1.1em - 4px);flex:0 0 auto;}
+  .hsRow span.sc{color:var(--yellow);flex:0 0 auto;margin-left:4px;}
   .hsCarIcon{height:1.56em;width:auto;image-rendering:pixelated;flex-shrink:0;margin-right:0.35em;}
+
+  /* flag select — same arcade-panel language as the other selection screens. The
+     arrows are deliberately flanking the large flag so the selection reads like a
+     tiny arcade cabinet carousel rather than a long scrolling list. */
+  #flagWrap .arcadePanel{width:380px;max-width:92vw;text-align:center;}
+  #flagCarousel{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:2vmin;margin:3vmin 0 1.5vmin;}
+  .flagArrow{font-family:'Press Start 2P',monospace;font-size:clamp(1rem,5vw,1.5rem);background:var(--yellow);color:var(--purple-dk);
+    border:none;border-radius:6px;padding:2.2vmin 1.8vmin;cursor:pointer;box-shadow:0 3px 0 #a88900;line-height:1;}
+  .flagArrow:active{transform:translateY(2px);box-shadow:0 1px 0 #a88900;}
+  #flagDisplay{font-size:clamp(2.13rem,9.33vw,3.33rem);line-height:1;width:5.5rem;max-width:22vw;overflow:visible;}
+  #flagName{font-family:'Press Start 2P',monospace;color:var(--white);font-size:clamp(0.62rem,2.5vw,0.82rem);
+    line-height:1.5;min-height:2.9em;display:flex;align-items:center;justify-content:center;padding:0 2vmin;}
+  #btnFlagContinue{margin-top:1.8vmin;}
 
   /* end-of-attract-cycle acknowledgement panel — same arcadePanel chrome as the
      start/high-score screens, with its own random car up top (same rotated-sprite
@@ -348,8 +372,8 @@
   }
   #checkpointFlashSub{font-size:0.5em;color:#ffd60a;text-shadow:2px 2px 0 #4a0000;margin-top:0.2em;}
   @keyframes checkpointPulse{
-    0%,100%{opacity:1;transform:scale(1);}
-    50%{opacity:0.7;transform:scale(1.15);}
+    0%,100%{opacity:1;}
+    50%{opacity:0.3;}
   }
   @keyframes checkpointFadeOut{
     0%{opacity:1;}
@@ -387,7 +411,7 @@
     transform:scale(0.2);opacity:0;}
 
   /* touch controls */
-  #controls{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;justify-content:space-between;align-items:flex-end;
+  #controls{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;justify-content:space-between;align-items:flex-end;transform:translateY(-30px);
     /* offset in from the side edges only (unchanged, for one-handed reach); the
        bottom offset clears the pause bar (see --pauseClearance) plus the music/
        jukebox row's own height, so the steer+brake buttons sit just above that row
@@ -614,6 +638,19 @@
     </div>
   </div>
 
+  <div id="flagWrap" class="hidden">
+    <div class="arcadePanel">
+      <div class="arcadeTitle" style="font-size:1rem;margin-bottom:1vmin;">PICK YOUR FLAG</div>
+      <div id="flagCarousel">
+        <button class="flagArrow" id="btnFlagPrev" aria-label="Previous flag">&#9664;</button>
+        <div id="flagDisplay">🏁</div>
+        <button class="flagArrow" id="btnFlagNext" aria-label="Next flag">&#9654;</button>
+      </div>
+      <div id="flagName">AUTO / DEFAULT</div>
+      <button id="btnFlagContinue" class="eraBtn">CONTINUE</button>
+    </div>
+  </div>
+
   <div id="eraWrap" class="hidden">
     <div class="arcadePanel" style="width:380px;max-width:92vw;text-align:center;">
       <div class="arcadeTitle" style="font-size:1rem;margin-bottom:2.4vmin;">CAR SELECT</div>
@@ -782,8 +819,10 @@
       <button class="svcBtn" id="btnSvcScanlineToggle">SCANLINES: OFF</button>
       <button class="svcBtn" id="btnSvcScanlineAlpha">TRANSPARENCY: 25%</button>
       <button class="svcBtn" id="btnSvcScanlineWidth">WIDTH: NORMAL</button>
+      <button class="svcBtn" id="btnSvcRollingCrt">ROLLING CRT: OFF</button>
       <button class="svcBtn" id="btnSvcColorBar">COLOUR BAR TEST</button>
       <button class="svcBtn" id="btnSvcTestPattern">TEST PATTERN</button>
+      <button class="svcBtn" id="btnSvcMPlusMusic">MATURE SOUNDTRACK: OFF</button>
       <button class="svcBtn exit" id="btnSvcExit">EXIT</button>
     </div>
   </div>
@@ -816,6 +855,7 @@
   </div>
 
   <div id="scanlineOverlay"></div>
+  <div id="rollingCrtOverlay"></div>
 </div>
 
 <script>
@@ -1163,6 +1203,12 @@ const HEADLIGHT_TINTS = {
   greenlaser: { near:'rgba(150,255,170,0.55)', mid:'rgba(150,255,170,0.22)', soft:'rgba(150,255,170,0.08)', far:'rgba(150,255,170,0)' },
   foglights:  HEADLIGHT_TINT_FOG
 };
+// AI traffic reuses the player's existing headlight colour palette. LIGHTS OFF is
+// deliberately excluded because this list represents colours, not the player's off state.
+const AI_HEADLIGHT_TINT_KEYS = Object.keys(HEADLIGHT_TINTS);
+function randomAiHeadlightTintKey(){
+  return AI_HEADLIGHT_TINT_KEYS[randInt(0, AI_HEADLIGHT_TINT_KEYS.length-1)];
+}
 let playerHeadlightTint = 'halogen'; // default; chosen on the light-tint select screen
 
 // Underglow — a cosmetic neon strip lit under the player's car, chosen on the
@@ -1346,9 +1392,10 @@ function drawWeatherOverlay(){
     const playerTint = HEADLIGHT_TINTS[playerHeadlightTint] || HEADLIGHT_TINTS.halogen;
     drawCarLights(player.x, playerScreenY, player.w||H*0.052*1.04, player.h||H*0.081*1.04, player.tilt, playerTintKey, playerTint);
   }
-  if(isNight || weather==='fog'){
-    const aiTintKey = weather==='fog' ? 'fog' : 'normal';
-    const aiTint = weather==='fog' ? HEADLIGHT_TINT_FOG : HEADLIGHT_TINT;
+  if(isNight || weather==='rain' || weather==='fog'){
+    // Night, night fog and rain use a random colour from the SAME headlight palette
+    // offered to the player. Plain daytime fog keeps its existing amber fog-light look.
+    const aiLightsNeedRandomColour = isNight || weather==='rain';
     const {w:carW, h:carH} = aiCarSize();
     // The car object itself isn't deleted from `objects` until sy<-220 or sy>H+120
     // (see update()) — well past the visible screen. The previous version of this fade
@@ -1367,6 +1414,13 @@ function drawWeatherOverlay(){
       if(alpha<=0) continue;
       const c = roadCenterXAt(o.worldY), hw = roadHalfWidthAt(o.worldY);
       const ox = c + o.relOffset*hw;
+      const aiTintKey = (aiLightsNeedRandomColour ? (o.aiHeadlightTintKey || randomAiHeadlightTintKey()) : 'fog');
+      const aiTint = aiLightsNeedRandomColour
+        ? (HEADLIGHT_TINTS[aiTintKey] || HEADLIGHT_TINTS.halogen)
+        : HEADLIGHT_TINT_FOG;
+      // If an older object somehow predates the per-car tint field, seed it once here
+      // rather than rerolling its colour every frame.
+      if(aiLightsNeedRandomColour && !o.aiHeadlightTintKey) o.aiHeadlightTintKey = aiTintKey;
       ctx.globalAlpha = alpha;
       drawOpponentLights(ox, sy, carW, carH, aiTintKey, aiTint);
       ctx.globalAlpha = 1;
@@ -1400,6 +1454,14 @@ function drawEmoji(glyph,x,y,size){
   ctx.restore();
 }
 
+/* ---------------- GitHub graphics asset base ----------------
+   Graphics use the same live GitHub main-branch directory as the music/audio. Every
+   image still keeps its existing loaded/fallback logic, so an offline/local copy uses
+   the game's placeholder art/emoji whenever the remote asset cannot be reached. */
+const GITHUB_ASSET_BASE = 'https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/';
+function githubAsset(name){ return GITHUB_ASSET_BASE + encodeURIComponent(name); }
+function prepareRemoteImage(img){ img.crossOrigin = 'anonymous'; return img; }
+
 /* ---------------- car sprite sheets (one per era) ---------------- */
 // Each era's sheet is expected to use the exact same grid (5 cols x 2 rows, same cell
 // size) as the original cars.png, so picking an era never touches gameplay — it only
@@ -1413,7 +1475,7 @@ function drawEmoji(glyph,x,y,size){
 // points at its real index here, so file numbering never has to match on-screen order.
 const CAR_SHEET_FILES = ['cars1.png','cars2.png','cars3.png','cars4.png','cars5.png','cars6.png','cars7.png','cars8.png','cars9.png','cars10.png'];
 const carsSheets = CAR_SHEET_FILES.map((src, i)=>{
-  const entry = {img:new Image(), loaded:false};
+  const entry = {img:prepareRemoteImage(new Image()), loaded:false};
   entry.img.onload = ()=>{
     entry.loaded = true;
     // if the start-menu car icon is currently showing (possibly still as its
@@ -1428,7 +1490,8 @@ const carsSheets = CAR_SHEET_FILES.map((src, i)=>{
     // a car from this era before its sheet had finished loading.
     if(i===underglowPreviewEra && !document.getElementById('underglowWrap').classList.contains('hidden')) renderUnderglowPreview();
   };
-  entry.img.src = src;
+  entry.img.onerror = ()=>{ entry.loaded = false; };
+  entry.img.src = githubAsset(src);
   return entry;
 });
 // Car and stage are independent selections (separate menus): selectedCarEra picks the
@@ -1580,9 +1643,10 @@ function updateHeadlightFlicker(dt){
 // been supplied yet (or fails to load), ground decor falls back to a flat colour box
 // per icon (TERRAIN_ICONS[row][col].color below) so a missing file never breaks the game.
 const TERRAIN_CELL = 112, TERRAIN_COLS = 12;
-const terrainSheet = {img:new Image(), loaded:false};
+const terrainSheet = {img:prepareRemoteImage(new Image()), loaded:false};
 terrainSheet.img.onload = ()=>{ terrainSheet.loaded = true; };
-terrainSheet.img.src = 'terrain.png';
+terrainSheet.img.onerror = ()=>{ terrainSheet.loaded = false; };
+terrainSheet.img.src = githubAsset('terrain.png');
 // era index (matches CAR_SHEET_FILES/BIOME_SETS/selectedStageEra) -> terrain sheet row
 const TERRAIN_ROW_FOR_ERA = [1,2,3,0,5,6,4,2,7,8]; // era 7 (2026 Sidecar) reuses Group C's row (2); era 8 (1955 Le Mans Prototype) uses the new mixed row 7; era 9 (1986 Group B Rally) uses row 8 (terrain2.png sprites, see below)
 
@@ -1609,9 +1673,10 @@ const TERRAIN2_RECTS = [
   {sx:1186,sw:56,  color:'#a89a5a', glyph:'🌾'}, // 13: tan dry grass tuft
   {sx:1250,sw:89,  color:'#6a8a5a', glyph:'🪨'}  // 14: mossy rock pile
 ];
-const terrain2Sheet = {img:new Image(), loaded:false};
+const terrain2Sheet = {img:prepareRemoteImage(new Image()), loaded:false};
 terrain2Sheet.img.onload = ()=>{ terrain2Sheet.loaded = true; };
-terrain2Sheet.img.src = 'terrain2.png';
+terrain2Sheet.img.onerror = ()=>{ terrain2Sheet.loaded = false; };
+terrain2Sheet.img.src = githubAsset('terrain2.png');
 
 /* ---------------- winner-podium sprite sheet ---------------- */
 // award.png: a 2x2 grid of rally-stage podium scenes (Le Mans Circuit, Mille Miglia,
@@ -1625,9 +1690,10 @@ const AWARD_COLS = 2, AWARD_ROWS = 2;
 // panels (the first pass's crop rect still caught a sliver of it).
 const AWARD_INSET = 7;
 const AWARD_CROP_W = AWARD_CELL_W - AWARD_INSET*2, AWARD_CROP_H = AWARD_CELL_H - AWARD_INSET*2;
-const awardSheet = {img:new Image(), loaded:false};
+const awardSheet = {img:prepareRemoteImage(new Image()), loaded:false};
 awardSheet.img.onload = ()=>{ awardSheet.loaded = true; };
-awardSheet.img.src = 'award.png';
+awardSheet.img.onerror = ()=>{ awardSheet.loaded = false; };
+awardSheet.img.src = githubAsset('award.png');
 
 /* ---------------- crowd sprite sheet (roadside spectators) ---------------- */
 // One sheet shared by every era, 16 cols x 6 rows of 88x128 cells (96 distinct people)
@@ -1635,9 +1701,10 @@ awardSheet.img.src = 'award.png';
 // car. If it hasn't loaded yet, both fall back to a small flat-colour person silhouette
 // (drawCrowdPerson below) so a missing file never breaks the game.
 const CROWD_CELL_W = 88, CROWD_CELL_H = 128, CROWD_COLS = 16, CROWD_ROWS = 6;
-const crowdSheet = {img:new Image(), loaded:false};
+const crowdSheet = {img:prepareRemoteImage(new Image()), loaded:false};
 crowdSheet.img.onload = ()=>{ crowdSheet.loaded = true; };
-crowdSheet.img.src = 'crowd.png';
+crowdSheet.img.onerror = ()=>{ crowdSheet.loaded = false; };
+crowdSheet.img.src = githubAsset('crowd.png');
 // Fallback roster when crowd.png hasn't loaded — a mix of people/pose emoji so a
 // crowd still reads as a bunch of individuals rather than clones. Picked
 // deterministically from each person's own (row,col) so the same person doesn't
@@ -1681,7 +1748,7 @@ const OBJ_FALLBACK_EMOJI = {
   [OBJ_BARRIER_COLS[0]]:'🚧', [OBJ_BARRIER_COLS[1]]:'🚧',
   [OBJ_SPANNER_COL]:'🔧', [OBJ_SCREWDRIVER_COL]:'🪛', [OBJ_GASCAN_COL]:'⛽',
 };
-const objectsSheet = {img:new Image(), loaded:false};
+const objectsSheet = {img:prepareRemoteImage(new Image()), loaded:false};
 // Main-menu instruction row icons mirror objectsSheet's own loaded state: emoji
 // (same glyphs the in-game pickups fall back to, plus a drum/barrier pair for the
 // HAZARDS row, which drawObjectSprite itself never needed an emoji fallback for)
@@ -1702,7 +1769,8 @@ function updateInstrIcons(){
   }
 }
 objectsSheet.img.onload = ()=>{ objectsSheet.loaded = true; updateInstrIcons(); };
-objectsSheet.img.src = 'objects.png';
+objectsSheet.img.onerror = ()=>{ objectsSheet.loaded = false; updateInstrIcons(); };
+objectsSheet.img.src = githubAsset('objects.png');
 updateInstrIcons();
 // Drawn once for a static obstacle (drum/barrier): no animation, (x,y) is the centre,
 // h is the drawn height (width follows the sheet's own aspect ratio).
@@ -2567,9 +2635,17 @@ let attractPhaseT = 0;
 // in — so someone watching the idle screen actually sees the breadth of the game
 // instead of one biome/car looping for however long it sits idle.
 const ATTRACT_SCENE_INTERVAL = 60, ATTRACT_FADE_DUR = 1.2;
+const ATTRACT_WEATHER_INTERVAL = 30; // attract-mode weather rolls independently every 30s
 let attractSceneT = 0;
+let attractWeatherT = 0;
 let attractFadeAlpha = 0; // 0 = fully visible, 1 = fully black
 let attractBiomeIdx = 0;
+function applyRandomAttractWeather(){
+  const combo = CONDITION_COMBOS[randInt(0, CONDITION_COMBOS.length-1)];
+  weather = combo.weather;
+  isNight = combo.night;
+  updateWindSound();
+}
 function applyRandomAttractScene(){
   let idx = randInt(0, BIOME_SETS.length-1);
   if(BIOME_SETS.length>1){ while(idx===attractBiomeIdx) idx = randInt(0, BIOME_SETS.length-1); }
@@ -2577,10 +2653,6 @@ function applyRandomAttractScene(){
   BIOMES = BIOME_SETS[idx];
   selectedStageEra = idx; // stage/terrain for the demo world
   selectedCarEra = idx; // keeps the displayed car's sprite sheet matching the shown era
-  const combo = CONDITION_COMBOS[randInt(0, CONDITION_COMBOS.length-1)];
-  weather = combo.weather;
-  isNight = combo.night;
-  updateWindSound();
   player.carIdx = randInt(0, CAR_COLS*CAR_ROWS-1);
 }
 function applyAttractPhase(idx){
@@ -2630,6 +2702,7 @@ function refreshServiceMenuDisplay(){
   document.getElementById('btnSvcScanlineToggle').textContent = 'SCANLINES: '+(scanlineOn?'ON':'OFF');
   document.getElementById('btnSvcScanlineAlpha').textContent = 'TRANSPARENCY: '+scanlineTransparency+'%';
   document.getElementById('btnSvcScanlineWidth').textContent = 'WIDTH: '+scanlineWidthLabel();
+  document.getElementById('btnSvcRollingCrt').textContent = 'ROLLING CRT: '+(rollingCrtOn?'ON':'OFF');
 }
 function openServiceMenu(){
   refreshServiceMenuDisplay();
@@ -2726,6 +2799,57 @@ document.getElementById('btnSvcScanlineWidth').addEventListener('pointerdown', (
   cycleScanlineWidth();
   refreshServiceMenuDisplay();
 });
+document.getElementById('btnSvcRollingCrt').addEventListener('pointerdown', (e)=>{
+  e.preventDefault();
+  e.stopPropagation();
+  setRollingCrtOn(!rollingCrtOn);
+  refreshServiceMenuDisplay();
+});
+document.getElementById('btnSvcMPlusMusic').addEventListener('pointerdown', (e)=>{
+  e.preventDefault();
+  e.stopPropagation();
+  mPlusMusicUnlocked = !mPlusMusicUnlocked;
+  try{ localStorage.setItem('turboPursuitMPlusMusicUnlocked', mPlusMusicUnlocked ? '1' : '0'); }catch(err){}
+  const btn = document.getElementById('btnSvcMPlusMusic');
+  if(mPlusMusicUnlocked){
+    if(!ERA_MUSIC.includes(MPLUS_MUSIC_TRACK)){
+      mPlusPreviousTrackIdx = jukeboxIdx;
+      ERA_MUSIC.push(MPLUS_MUSIC_TRACK);
+    } else {
+      mPlusPreviousTrackIdx = Math.min(jukeboxIdx, ERA_MUSIC.length-2);
+    }
+    const wasMusicMuted = musicMuted;
+    // Enable music without forcing SFX on. SFX-only -> music+SFX; full mute -> music-only.
+    if(musicMuted){
+      setAudioMode(sfxMuted ? 2 : 0);
+    }
+    jukeboxIdx = ERA_MUSIC.indexOf(MPLUS_MUSIC_TRACK);
+    bgMusic.pause();
+    bgMusic.dataset.track = MPLUS_MUSIC_TRACK;
+    bgMusic.src = MPLUS_MUSIC_TRACK;
+    bgMusic.currentTime = 0;
+    if(!musicMuted){ tryPlayMusic(); }
+    btn.textContent = 'MATURE SOUNDTRACK: ON';
+  } else {
+    const matureIdx = ERA_MUSIC.indexOf(MPLUS_MUSIC_TRACK);
+    const wasPlayingMature = bgMusic.dataset.track === MPLUS_MUSIC_TRACK;
+    ERA_MUSIC.splice(matureIdx, 1);
+    let restoreIdx = mPlusPreviousTrackIdx;
+    if(restoreIdx >= ERA_MUSIC.length) restoreIdx = ERA_MUSIC.length-1;
+    if(wasPlayingMature){
+      jukeboxIdx = restoreIdx;
+      const restoreTrack = ERA_MUSIC[jukeboxIdx];
+      bgMusic.pause();
+      bgMusic.dataset.track = restoreTrack;
+      bgMusic.src = restoreTrack;
+      bgMusic.currentTime = 0;
+      if(!musicMuted){ tryPlayMusic(); }
+    } else if(jukeboxIdx > matureIdx){
+      jukeboxIdx--;
+    }
+    btn.textContent = 'MATURE SOUNDTRACK: OFF';
+  }
+});
 document.getElementById('btnSvcColorBar').addEventListener('pointerdown', (e)=>{
   e.preventDefault();
   e.stopPropagation();
@@ -2749,14 +2873,32 @@ document.getElementById('btnSvcExit').addEventListener('pointerdown', (e)=>{
 // compared against Easy scores, and a Scenic run (no obstacles, capped speed) is never
 // compared against a Race one. Race mode keeps its original (pre-mode-select) key format
 // so existing players' scores carry over as their race-mode scores; scenic gets new keys.
+let selectedFlag = '🏁';
+
 function hsKey(diff, mode){
   return (mode==='scenic') ? 'turboPursuitHighScores_scenic_'+diff : 'turboPursuitHighScores_'+diff;
 }
 function loadHS(diff, mode){
-  try{ return JSON.parse(localStorage.getItem(hsKey(diff, mode)))||[]; }catch(e){ return []; }
+  try{
+    const raw = JSON.parse(localStorage.getItem(hsKey(diff, mode)))||[];
+    if(!Array.isArray(raw)) return [];
+    let changed = false;
+    const list = raw.map(entry=>{
+      if(!entry || typeof entry!=='object') return entry;
+      if(!entry.flag){ changed = true; return {...entry, flag:'🏁'}; }
+      return entry;
+    });
+    // Migrate older score records in place so the flag becomes real persistent data,
+    // not merely a display fallback.
+    if(changed) localStorage.setItem(hsKey(diff, mode), JSON.stringify(list));
+    return list;
+  }catch(e){ return []; }
 }
 function saveHS(diff, list, mode){
-  try{ localStorage.setItem(hsKey(diff, mode), JSON.stringify(list)); }catch(e){}
+  try{
+    const normalized = list.map(entry=>entry && typeof entry==='object' ? {...entry, flag:entry.flag || '🏁'} : entry);
+    localStorage.setItem(hsKey(diff, mode), JSON.stringify(normalized));
+  }catch(e){}
 }
 function topScore(diff, mode){
   const l = loadHS(diff, mode);
@@ -2776,6 +2918,7 @@ const SVC_GAMES_KEY = 'turboPursuitGamesStarted';
 const SVC_SCANLINE_ON_KEY = 'turboPursuitScanlineOn';
 const SVC_SCANLINE_ALPHA_KEY = 'turboPursuitScanlineTransparency'; // 25, 50, or 75
 const SVC_SCANLINE_WIDTH_KEY = 'turboPursuitScanlineWidth'; // 0.5, 1, 2, or 3 (multiplier on the base line thickness)
+const SVC_ROLLING_CRT_KEY = 'turboPursuitRollingCrt';
 function getTotalPlaySeconds(){
   try{ return (parseFloat(localStorage.getItem(SVC_TIME_KEY)) || 0) + svcPlaySecondsPending; }catch(e){ return svcPlaySecondsPending; }
 }
@@ -2826,6 +2969,7 @@ const SCANLINE_WIDTH_STEPS = [
   {mult:0.5, label:'HALF'}
 ];
 let scanlineWidthMult = 1;
+let rollingCrtOn = false;
 try{ scanlineOn = localStorage.getItem(SVC_SCANLINE_ON_KEY) === '1'; }catch(e){}
 try{ scanlineTransparency = parseInt(localStorage.getItem(SVC_SCANLINE_ALPHA_KEY), 10) || 25; }catch(e){}
 try{ scanlineWidthMult = parseFloat(localStorage.getItem(SVC_SCANLINE_WIDTH_KEY)) || 1; }catch(e){}
@@ -2837,6 +2981,17 @@ function buildScanlineGradient(mult){
   const a = (1*mult), b = (2*mult), c = (3*mult);
   return 'repeating-linear-gradient(to bottom, rgba(0,0,0,0.35) 0px, rgba(0,0,0,0.35) '+a+'px, rgba(0,255,70,0.07) '+b+'px, rgba(0,255,70,0.07) '+c+'px)';
 }
+try{ rollingCrtOn = localStorage.getItem(SVC_ROLLING_CRT_KEY) === '1'; }catch(e){}
+function applyRollingCrt(){
+  const el = document.getElementById('rollingCrtOverlay');
+  el.classList.toggle('on', rollingCrtOn);
+}
+function setRollingCrtOn(on){
+  rollingCrtOn = on;
+  try{ localStorage.setItem(SVC_ROLLING_CRT_KEY, on?'1':'0'); }catch(e){}
+  applyRollingCrt();
+}
+applyRollingCrt();
 function applyScanlineOverlay(){
   const el = document.getElementById('scanlineOverlay');
   el.classList.toggle('on', scanlineOn);
@@ -2867,7 +3022,7 @@ applyScanlineOverlay(); // restore the saved scanline setting immediately on loa
 // isNight record that run's conditions, shown as two small stacked icons after the name.
 function insertHS(name, s, diff, mode, era, carIdx, time, weather, isNight){
   const l = loadHS(diff, mode);
-  l.push({name:name.slice(0,8).toUpperCase()||'AAA', score:Math.floor(s), era, carIdx, time:Math.floor(time), weather, isNight});
+  l.push({name:name.slice(0,8).toUpperCase()||'AAA', flag:selectedFlag || '🏁', score:Math.floor(s), era, carIdx, time:Math.floor(time), weather, isNight});
   l.sort((a,b)=>b.score-a.score);
   saveHS(diff, l.slice(0,10), mode);
 }
@@ -2881,6 +3036,7 @@ function generateFakeHS(diff){
   for(let i=0;i<10;i++){
     l.push({
       name: HS_FAKE_NAMES[randInt(0, HS_FAKE_NAMES.length-1)],
+      flag: '🏁',
       score: randInt(20, 499),
       era: randInt(0, CAR_SHEET_FILES.length-1),
       carIdx: randInt(0, CAR_COLS*CAR_ROWS-1),
@@ -2903,9 +3059,10 @@ function renderFullHS(diff, mode){
   let html = '';
   for(let i=0;i<10;i++){
     const entry = l[i];
-    let era, carIdx, nameHtml, timeHtml, scoreHtml, condHtml;
+    let era, carIdx, flagHtml, nameHtml, timeHtml, scoreHtml, condHtml;
     if(entry){
       era = entry.era; carIdx = entry.carIdx;
+      flagHtml = '<span class="flag">'+(entry.flag || '🏁')+'</span>';
       nameHtml = entry.name;
       timeHtml = formatTime(entry.time||0);
       scoreHtml = entry.score;
@@ -2918,13 +3075,14 @@ function renderFullHS(diff, mode){
       // blank slot: still show a car, just a random one, rather than a plain icon
       era = randInt(0, CAR_SHEET_FILES.length-1);
       carIdx = randInt(0, CAR_COLS*CAR_ROWS-1);
+      flagHtml = '<span class="flag">🏁</span>';
       nameHtml = 'COG';
       timeHtml = '00:00';
       scoreHtml = '000';
       condHtml = '';
     }
     const iconHtml = '<canvas class="hsCarIcon" data-era="'+era+'" data-caridx="'+carIdx+'" width="48" height="36"></canvas>';
-    html += '<div class="hsRow"><span class="rank">'+(i+1)+'</span><span class="nm">'+iconHtml+nameHtml+condHtml+'</span><span class="tm">'+timeHtml+'</span><span class="sc">'+scoreHtml+'</span></div>';
+    html += '<div class="hsRow"><span class="rank">'+(i+1)+'</span><span class="nm">'+flagHtml+iconHtml+nameHtml+condHtml+'</span><span class="tm">'+timeHtml+'</span><span class="sc">'+scoreHtml+'</span></div>';
   }
   document.getElementById('hsListFull').innerHTML = html;
   document.querySelectorAll('#hsListFull .hsCarIcon').forEach(canvas=>{
@@ -3044,13 +3202,72 @@ function showDifficultySelect(){
 function selectDifficulty(key){
   difficulty = DIFFICULTY[key] ? key : 'intermediate';
   document.getElementById('difficultyWrap').classList.add('hidden');
-  showEraSelect();
+  showFlagSelect();
 }
 document.querySelectorAll('.difficultyBtn').forEach(btn=>{
   btn.addEventListener('pointerdown', (e)=>{
     e.preventDefault();
     selectDifficulty(btn.dataset.difficulty);
   });
+});
+
+/* ---------------- flag select (player identity for high scores) ---------------- */
+// Country/territory flags use the Unicode regional-indicator sequence. The ISO alpha-2
+// list below covers the standard country/territory flag set; EU and XK are included as
+// commonly supported emoji region flags, followed by the three UK subdivision flags.
+// The six non-country flags are deliberately first so the default 🏁 entry is immediate.
+const FLAG_SPECIALS = [
+  {flag:'🏁', name:'AUTO / DEFAULT'},
+  {flag:'🏳️', name:'WHITE FLAG'},
+  {flag:'🏳️‍⚧️', name:'TRANSGENDER FLAG'},
+  {flag:'🏳️‍🌈', name:'RAINBOW FLAG'},
+  {flag:'🏴', name:'BLACK FLAG'},
+  {flag:'🚩', name:'RED FLAG'}
+];
+const FLAG_REGION_CODES = [
+  'AD','AE','AF','AG','AI','AL','AM','AO','AQ','AR','AS','AT','AU','AW','AX','AZ','BA','BB','BD','BE','BF','BG','BH','BI','BJ','BL','BM','BN','BO','BQ','BR','BS','BT','BV','BW','BY','BZ','CA','CC','CD','CF','CG','CH','CI','CK','CL','CM','CN','CO','CR','CU','CV','CW','CX','CY','CZ','DE','DJ','DK','DM','DO','DZ','EC','EE','EG','EH','ER','ES','ET','FI','FJ','FK','FM','FO','FR','GA','GB','GD','GE','GF','GG','GH','GI','GL','GM','GN','GP','GQ','GR','GS','GT','GU','GW','GY','HK','HM','HN','HR','HT','HU','ID','IE','IL','IM','IN','IO','IQ','IR','IS','IT','JE','JM','JO','JP','KE','KG','KH','KI','KM','KN','KP','KR','KW','KY','KZ','LA','LB','LC','LI','LK','LR','LS','LT','LU','LV','LY','MA','MC','MD','ME','MF','MG','MH','MK','ML','MM','MN','MO','MP','MQ','MR','MS','MT','MU','MV','MW','MX','MY','MZ','NA','NC','NE','NF','NG','NI','NL','NO','NP','NR','NU','NZ','OM','PA','PE','PF','PG','PH','PK','PL','PM','PN','PR','PS','PT','PW','PY','QA','RE','RO','RS','RU','RW','SA','SB','SC','SD','SE','SG','SH','SI','SJ','SK','SL','SM','SN','SO','SR','SS','ST','SV','SX','SY','SZ','TC','TD','TF','TG','TH','TJ','TK','TL','TM','TN','TO','TR','TT','TV','TW','TZ','UA','UG','UM','US','UY','UZ','VA','VC','VE','VG','VI','VN','VU','WF','WS','YE','YT','ZA','ZM','ZW','EU','XK','UN'
+];
+function flagEmojiFromCode(code){
+  return code.toUpperCase().replace(/[A-Z]/g, ch=>String.fromCodePoint(0x1F1E6 + ch.charCodeAt(0)-65));
+}
+const FLAG_REGION_NAMES = (()=>{
+  try{ return new Intl.DisplayNames(['en'], {type:'region'}); }catch(e){ return null; }
+})();
+function flagNameFromCode(code){
+  try{ return FLAG_REGION_NAMES ? (FLAG_REGION_NAMES.of(code) || code) : code; }catch(e){ return code; }
+}
+const FLAG_SUBDIVISIONS = [
+  {flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿', name:'ENGLAND'},
+  {flag:'🏴󠁧󠁢󠁳󠁣󠁴󠁿', name:'SCOTLAND'},
+  {flag:'🏴󠁧󠁢󠁷󠁬󠁳󠁿', name:'WALES'}
+];
+const FLAG_OPTIONS = FLAG_SPECIALS
+  .concat(FLAG_REGION_CODES.map(code=>({flag:flagEmojiFromCode(code), name:flagNameFromCode(code), code})))
+  .concat(FLAG_SUBDIVISIONS);
+let flagIndex = 0;
+function renderFlagSelection(){
+  const item = FLAG_OPTIONS[flagIndex] || FLAG_OPTIONS[0];
+  selectedFlag = item.flag;
+  document.getElementById('flagDisplay').textContent = item.flag;
+  document.getElementById('flagName').textContent = item.name.toUpperCase();
+}
+function showFlagSelect(){
+  document.getElementById('flagWrap').classList.remove('hidden');
+  const found = FLAG_OPTIONS.findIndex(item=>item.flag===selectedFlag);
+  flagIndex = found>=0 ? found : 0;
+  renderFlagSelection();
+}
+function stepFlag(dir){
+  flagIndex = (flagIndex + dir + FLAG_OPTIONS.length) % FLAG_OPTIONS.length;
+  renderFlagSelection();
+}
+document.getElementById('btnFlagPrev').addEventListener('pointerdown', e=>{ e.preventDefault(); e.stopPropagation(); stepFlag(-1); });
+document.getElementById('btnFlagNext').addEventListener('pointerdown', e=>{ e.preventDefault(); e.stopPropagation(); stepFlag(1); });
+document.getElementById('btnFlagContinue').addEventListener('pointerdown', e=>{
+  e.preventDefault();
+  e.stopPropagation();
+  document.getElementById('flagWrap').classList.add('hidden');
+  showEraSelect();
 });
 
 // CAR SELECT — picks the car's year/class sheet only (selectedCarEra). Stage/terrain
@@ -3327,11 +3544,13 @@ function beginAttract(){
   state = 'playing';
   setEngineSound(true);
   attractSceneT = 0;
+  attractWeatherT = 0;
   attractFadeAlpha = 0;
   attractBiomeIdx = 0;
   BIOMES = BIOME_SETS[attractBiomeIdx];
   selectedStageEra = attractBiomeIdx;
   selectedCarEra = attractBiomeIdx;
+  applyRandomAttractWeather(); // attract mode starts with a RANDOM CONDITIONS roll
   applyAttractPhase(0); // always resume the cycle at the start screen
 }
 
@@ -3421,6 +3640,7 @@ function drawPodiumFrame(cctx, w, h, alpha, elapsedSec, podCol, podRow, crowd, c
   cctx.restore();
 }
 function playWinnerSound(){
+  if(typeof sfxMuted!=='undefined' && sfxMuted) return;
   const el = document.getElementById('winnerSound');
   if(!el) return;
   el.currentTime = 0;
@@ -3609,7 +3829,7 @@ function unduckMusic(id){
 const ERA_MUSIC = [
   'https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/Racer.mp3',        // 0: 1963 Formula
   'https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/1990.mp3',        // 1: 1983 Group C
-  'https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/askme.mp3',      // 2: 1990 Japan Domestic
+  'https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/gnostic.mp3',      // 2: 1990 Japan Domestic
   'https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/1930.mp3',        // 3: 1930 1000 Mile
   'https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/Ground%20effect%20.mp3', // 4: 2037 Concept Class
   'https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/Tunnel.mp3',      // 5: 3027 Wiped Out
@@ -3632,6 +3852,11 @@ function setEraMusic(idx){
 // track the current level assigned. Starts wherever setEraMusic() last left it (the
 // current level's own track), and wraps around at either end of the list.
 let jukeboxIdx = 0;
+const MPLUS_MUSIC_TRACK = 'https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/askme.mp3';
+let mPlusMusicUnlocked = false;
+try{ mPlusMusicUnlocked = localStorage.getItem('turboPursuitMPlusMusicUnlocked') === '1'; }catch(e){}
+if(mPlusMusicUnlocked && !ERA_MUSIC.includes(MPLUS_MUSIC_TRACK)) ERA_MUSIC.push(MPLUS_MUSIC_TRACK);
+let mPlusPreviousTrackIdx = 0;
 function playJukeboxTrack(idx){
   jukeboxIdx = ((idx % ERA_MUSIC.length) + ERA_MUSIC.length) % ERA_MUSIC.length;
   const track = ERA_MUSIC[jukeboxIdx];
@@ -3654,14 +3879,30 @@ document.getElementById('btnPrevSong').addEventListener('pointerdown', (e)=>{
   e.preventDefault(); e.stopPropagation();
   prevSong();
 });
-let musicMuted = false;
-try{ musicMuted = localStorage.getItem('turboPursuitMusicMuted') === '1'; }catch(e){}
+let audioMode = 0; // 0=music+SFX, 1=SFX only, 2=music only, 3=fully muted
+try{
+  const savedAudioMode = parseInt(localStorage.getItem('turboPursuitAudioMode'), 10);
+  if(Number.isInteger(savedAudioMode) && savedAudioMode>=0 && savedAudioMode<=3) audioMode = savedAudioMode;
+  else if(localStorage.getItem('turboPursuitMusicMuted') === '1') audioMode = 1; // migrate old MUSIC: OFF preference to SFX-only
+}catch(e){}
+let musicMuted = audioMode===1 || audioMode===3;
+let sfxMuted = audioMode===2 || audioMode===3;
+function saveAudioMode(){
+  try{ localStorage.setItem('turboPursuitAudioMode', String(audioMode)); }catch(e){}
+}
 function saveMusicMuted(){
   try{ localStorage.setItem('turboPursuitMusicMuted', musicMuted ? '1' : '0'); }catch(e){}
 }
 function updateMusicToggleLabel(){
   const btn = document.getElementById('btnMusicToggle');
-  if(btn) btn.textContent = musicMuted ? 'MUSIC: OFF' : 'MUSIC: ON';
+  if(!btn) return;
+  const labels = [
+    '<span class="audioIcon">🎵</span>ON <span class="audioIcon">🔊</span>ON',
+    '<span class="audioIcon">🎵</span>OFF <span class="audioIcon">🔊</span>ON',
+    '<span class="audioIcon">🎵</span>ON <span class="audioIcon">🔊</span>OFF',
+    '<span class="audioIcon">🔇</span>MUTE'
+  ];
+  btn.innerHTML = labels[audioMode];
 }
 function tryPlayMusic(){
   if(musicMuted) return;
@@ -3670,12 +3911,47 @@ function tryPlayMusic(){
   const p = bgMusic.play();
   if(p && p.catch) p.catch(()=>{ /* still blocked; will retry on next gesture */ });
 }
+function stopAllSfx(){
+  if(typeof carSound!=='undefined'){ carSound.pause(); carSound.currentTime=0; }
+  if(typeof windSound!=='undefined'){ windSound.pause(); windSound.currentTime=0; windSound.volume=0; }
+  if(typeof lowFuelSound!=='undefined'){ lowFuelSound.pause(); lowFuelSound.currentTime=0; lowFuelSound.volume=LOW_FUEL_VOLUME; lowFuelFading=false; lowFuelFadeT=0; }
+  if(typeof goSound!=='undefined'){ goSound.pause(); goSound.currentTime=0; }
+  if(typeof checkpointSound!=='undefined'){ checkpointSound.pause(); checkpointSound.currentTime=0; }
+  if(typeof pitstopSound!=='undefined'){ pitstopSound.pause(); pitstopSound.currentTime=0; }
+  if(typeof crashSound!=='undefined'){ crashSound.pause(); crashSound.currentTime=0; }
+  if(typeof winnerSound!=='undefined'){ winnerSound.pause(); winnerSound.currentTime=0; }
+  if(typeof pickupVoices!=='undefined'){ pickupVoices.forEach(v=>v.el.pause()); pickupVoices=[]; }
+  if(typeof impactVoices!=='undefined'){ impactVoices.forEach(v=>v.el.pause()); impactVoices=[]; }
+  if(typeof activeDucks!=='undefined'){ activeDucks.clear(); if(!musicMuted && typeof fadeMusicTo==='function') fadeMusicTo(BASE_MUSIC_VOLUME,200); }
+}
+function applyAudioMode(){
+  musicMuted = audioMode===1 || audioMode===3;
+  sfxMuted = audioMode===2 || audioMode===3;
+  if(musicMuted){
+    bgMusic.pause();
+  } else if(state!=='countdown'){
+    tryPlayMusic();
+  }
+  if(sfxMuted){
+    stopAllSfx();
+  } else {
+    updateWindSound();
+    tryPlayEngine();
+    tryPlayLowFuelSound();
+  }
+}
+function setAudioMode(mode){
+  audioMode = ((mode%4)+4)%4;
+  saveAudioMode();
+  musicMuted = audioMode===1 || audioMode===3;
+  sfxMuted = audioMode===2 || audioMode===3;
+  updateMusicToggleLabel();
+  applyAudioMode();
+}
+function toggleAudioMode(){ setAudioMode(audioMode+1); }
 document.getElementById('btnMusicToggle').addEventListener('pointerdown', (e)=>{
   e.preventDefault(); e.stopPropagation();
-  musicMuted = !musicMuted;
-  saveMusicMuted();
-  updateMusicToggleLabel();
-  if(musicMuted){ bgMusic.pause(); } else { tryPlayMusic(); }
+  toggleAudioMode();
 });
 updateMusicToggleLabel();
 
@@ -3710,7 +3986,7 @@ function windLoopStep(){
   });
 }
 function startWindLoop(){
-  if(windLoopActive) return;
+  if(sfxMuted || windLoopActive) return;
   windLoopActive = true;
   windSound.currentTime = 0;
   windSound.volume = 0;
@@ -3737,7 +4013,7 @@ const carSound = document.getElementById('carSound');
 carSound.volume = 1;
 let engineShouldPlay = false;
 function tryPlayEngine(){
-  if(!engineShouldPlay || !carSound.paused) return;
+  if(sfxMuted || !engineShouldPlay || !carSound.paused) return;
   const p = carSound.play();
   if(p && p.catch) p.catch(()=>{ /* still blocked; will retry on next gesture */ });
 }
@@ -3758,7 +4034,7 @@ let lowFuelShouldPlay = false;
 let lowFuelFading = false;
 let lowFuelFadeT = 0;
 function tryPlayLowFuelSound(){
-  if(!lowFuelShouldPlay) return;
+  if(sfxMuted || !lowFuelShouldPlay) return;
   // cancel any fade-out in progress and snap volume back to full
   lowFuelFading = false;
   lowFuelFadeT = 0;
@@ -3790,7 +4066,7 @@ function updateLowFuelFade(dt){
   }
 }
 
-function tryPlayAllAudio(){ tryPlayMusic(); tryPlayEngine(); tryPlayLowFuelSound(); }
+function tryPlayAllAudio(){ if(!sfxMuted){ updateWindSound(); tryPlayEngine(); tryPlayLowFuelSound(); } tryPlayMusic(); }
 tryPlayAllAudio();
 window.addEventListener('pointerdown', tryPlayAllAudio, {once:false});
 document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) tryPlayAllAudio(); });
@@ -3814,6 +4090,7 @@ function requestFullscreenIfNeeded(){
    countdown begins so it's instant with no load delay. */
 const goSound = document.getElementById('goSound');
 function playGoSound(){
+  if(sfxMuted) return;
   goSound.currentTime = 0;
   const p = goSound.play();
   if(p && p.catch) p.catch(()=>{ /* blocked until a user gesture unlocks it */ });
@@ -3825,6 +4102,7 @@ function playGoSound(){
 const checkpointSound = document.getElementById('checkpointSound');
 checkpointSound.volume = 1;
 function playCheckpointSound(){
+  if(sfxMuted) return;
   checkpointSound.currentTime = 0;
   const duckId = duckMusic(CHECKPOINT_DUCK_VOLUME);
   checkpointSound.addEventListener('ended', ()=>unduckMusic(duckId), {once:true});
@@ -3834,6 +4112,7 @@ function playCheckpointSound(){
 const pitstopSound = document.getElementById('pitstopSound');
 pitstopSound.volume = 1;
 function playPitstopSound(){
+  if(sfxMuted) return;
   pitstopSound.currentTime = 0;
   const duckId = duckMusic(PITSTOP_DUCK_VOLUME);
   pitstopSound.addEventListener('ended', ()=>unduckMusic(duckId), {once:true});
@@ -3853,6 +4132,7 @@ function playPitstopSound(){
 const pickupSoundSources = ['pickupSound1','pickupSound2','pickupSound3'].map(id=>document.getElementById(id));
 let pickupVoices = []; // {el, startedAt} — currently-playing clones, oldest first isn't guaranteed order, sorted by startedAt when evicting
 function playPickupSound(){
+  if(sfxMuted) return;
   const src = pickupSoundSources[randInt(0, pickupSoundSources.length-1)];
   const voice = src.cloneNode(true);
   voice.currentTime = 0;
@@ -3883,6 +4163,7 @@ function playPickupSound(){
 const impactSoundSources = ['impactSound1','impactSound2','impactSound3'].map(id=>document.getElementById(id));
 let impactVoices = [];
 function playImpactSound(){
+  if(sfxMuted) return;
   const src = impactSoundSources[randInt(0, impactSoundSources.length-1)];
   const voice = src.cloneNode(true);
   voice.currentTime = 0;
@@ -3914,6 +4195,7 @@ function playImpactSound(){
    fire-and-forget/fail-silent pattern as playGoSound(). */
 const crashSound = document.getElementById('crashSound');
 function playCrashSound(){
+  if(sfxMuted) return;
   crashSound.currentTime = 0;
   const p = crashSound.play();
   if(p && p.catch) p.catch(()=>{ /* file missing, blocked, etc — fail silently */ });
@@ -4000,6 +4282,7 @@ function returnToMainMenu(){
   document.getElementById('hsPanel').classList.add('hidden');
   document.getElementById('creditsPanel').classList.add('hidden');
   document.getElementById('nameWrap').classList.add('hidden');
+  document.getElementById('flagWrap').classList.add('hidden');
   document.getElementById('tapPrompt').textContent = 'TAP TO START';
   beginAttract(); // re-enters applyAttractPhase(0) ('start'), which re-rolls the menu car icon
 }
@@ -4167,7 +4450,7 @@ function spawnAi(){
   const wy = fasterThanPlayer
     ? scrollY + H*0.76 - H - 80   // spawn just below the bottom edge, behind the player
     : scrollY + H*0.76 + 80;      // spawn just above the top edge, ahead of the player
-  objects.push({type:'ai', worldY:wy, relOffset:rand(-0.68,0.68), carIdx, forwardSpd, alive:true, passed:false, phase:rand(0,6.28), spawnSide: fasterThanPlayer ? 'behind' : 'ahead'});
+  objects.push({type:'ai', worldY:wy, relOffset:rand(-0.68,0.68), carIdx, forwardSpd, alive:true, passed:false, phase:rand(0,6.28), spawnSide: fasterThanPlayer ? 'behind' : 'ahead', aiHeadlightTintKey:randomAiHeadlightTintKey()});
 }
 
 /* ---------------- update ---------------- */
@@ -4205,11 +4488,18 @@ function update(dt){
     attractSceneT += dt;
     if(attractSceneT >= ATTRACT_SCENE_INTERVAL){
       attractSceneT -= ATTRACT_SCENE_INTERVAL;
-      // Skip the swap while the player is mid difficulty/car/stage/conditions/tint/
+      // Skip the scene swap while the player is mid difficulty/car/stage/conditions/tint/
       // underglow/car-select flow — it reassigns selectedCarEra/selectedStageEra (and
       // player.carIdx), which would otherwise silently overwrite the car/stage the
       // player already committed to before the run even starts.
       if(!inRunSetupFlow) applyRandomAttractScene(); // happens while attractFadeAlpha is at/near 1 (fully black)
+    }
+    attractWeatherT += dt;
+    if(attractWeatherT >= ATTRACT_WEATHER_INTERVAL){
+      attractWeatherT -= ATTRACT_WEATHER_INTERVAL;
+      // Attract mode uses its own 30s random-conditions clock. This is deliberately
+      // separate from the player's normal 2-4 minute RANDOM CONDITIONS timer below.
+      if(!inRunSetupFlow) applyRandomAttractWeather();
     }
     if(attractSceneT < ATTRACT_FADE_DUR){
       attractFadeAlpha = 1 - attractSceneT/ATTRACT_FADE_DUR; // just swapped — fade back in
@@ -4975,6 +5265,29 @@ function drawPitstopSigns(){
 // reaches the player at exactly the moment the CHECKPOINT BONUS flash triggers — it
 // starts off-screen (far up the road) right after a checkpoint and scrolls down into
 // view as the timer runs out.
+/* The checkpoint stripe is visible for a while before the bonus fires. Keep the
+   moving road geometry live, but pre-render the expensive CHECKPOINT text once and
+   scale that tiny bitmap instead of rebuilding font/shadow/text metrics every frame. */
+const checkpointLabelCanvas = document.createElement('canvas');
+const checkpointLabelCtx = checkpointLabelCanvas.getContext('2d');
+let checkpointLabelPx = 0;
+function ensureCheckpointLabel(){
+  const px = Math.max(1, Math.round(H*0.045));
+  if(px===checkpointLabelPx && checkpointLabelCanvas.width>0) return;
+  checkpointLabelPx = px;
+  checkpointLabelCtx.font = 'bold '+px+'px "Press Start 2P", monospace';
+  const m = checkpointLabelCtx.measureText('CHECKPOINT');
+  const pad = 12;
+  checkpointLabelCanvas.width = Math.ceil(m.width + pad*2);
+  checkpointLabelCanvas.height = Math.ceil(px*1.45 + pad*2);
+  checkpointLabelCtx.font = 'bold '+px+'px "Press Start 2P", monospace';
+  checkpointLabelCtx.textAlign = 'center';
+  checkpointLabelCtx.textBaseline = 'middle';
+  checkpointLabelCtx.fillStyle = '#1aff6e';
+  checkpointLabelCtx.shadowColor = 'rgba(0,0,0,0.6)';
+  checkpointLabelCtx.shadowBlur = 6;
+  checkpointLabelCtx.fillText('CHECKPOINT', checkpointLabelCanvas.width/2, checkpointLabelCanvas.height/2);
+}
 function drawCheckpointStripe(){
   if(state!=='playing') return;
   const playerScreenY = H*0.76;
@@ -4984,26 +5297,15 @@ function drawCheckpointStripe(){
   const ox = roadCenterXAt(worldY);
   const roadW = roadHalfWidthAt(worldY)*2;
   ctx.save();
-  // the stripe band itself, spanning the full road width, with the text sitting on top of it
+  // the stripe band itself, spanning the full road width, with the cached text on top
   ctx.fillStyle = 'rgba(30,220,110,0.5)';
   ctx.fillRect(ox-roadW/2, sy-BLOCK*0.9, roadW, BLOCK*1.8);
-  ctx.font = 'bold '+(H*0.045)+'px "Press Start 2P", monospace';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#1aff6e';
-  ctx.shadowColor = 'rgba(0,0,0,0.6)';
-  ctx.shadowBlur = 6;
-  const label = 'CHECKPOINT';
+  ensureCheckpointLabel();
   const clampW = roadW*0.92;
-  const textW = ctx.measureText(label).width;
-  if(textW > clampW){
-    const s = clampW/textW;
-    ctx.translate(ox, sy);
-    ctx.scale(s, 1);
-    ctx.fillText(label, 0, 0);
-  } else {
-    ctx.fillText(label, ox, sy);
-  }
+  const drawW = Math.min(checkpointLabelCanvas.width, clampW);
+  const drawH = checkpointLabelCanvas.height * (drawW/checkpointLabelCanvas.width);
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(checkpointLabelCanvas, ox-drawW/2, sy-drawH/2, drawW, drawH);
   ctx.restore();
 }
 
