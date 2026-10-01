@@ -4287,6 +4287,7 @@ function stopAllSfx(){
   if(typeof winnerSound!=='undefined'){ winnerSound.pause(); winnerSound.currentTime=0; }
   if(typeof pickupVoices!=='undefined'){ pickupVoices.forEach(v=>v.el.pause()); pickupVoices=[]; }
   if(typeof impactVoices!=='undefined'){ impactVoices.forEach(v=>v.el.pause()); impactVoices=[]; }
+  stopBufferVoices();
   if(typeof activeDucks!=='undefined'){ activeDucks.clear(); if(!musicMuted && typeof fadeMusicTo==='function') fadeMusicTo(BASE_MUSIC_VOLUME,200); }
 }
 function applyAudioMode(){
@@ -4881,8 +4882,79 @@ function updateLowFuelFade(dt){
 applySfxLevels();
 applyMusicLevel();
 
-function tryPlayAllAudio(){ if(!sfxMuted){ updateWindSound(); tryPlayEngine(); tryPlayLowFuelSound(); } tryPlayMusic(); }
+/* ---------------- Web Audio buffers for short stingers ----------------
+   Pitstop, pickups, impacts, crash, checkpoint and nitro used to play through <audio>
+   elements, with a fresh cloneNode() decoder per pickup. A pitstop is 12 pickups back to
+   back, which meant a burst of media-element creations (plus a seek on the pitstop
+   stinger) on top of the music, ambience and engine — a real hitch on mobile. Now each
+   short clip is fetched + decoded ONCE into an AudioBuffer, and every play is just a
+   cheap BufferSource node. If a buffer isn't ready (offline, fetch blocked, context still
+   suspended before the first tap) each play function falls straight back to the original
+   <audio>-element path, so nothing ever goes silent. */
+const SFX_BUFFER_IDS = ['pitstopSound','pickupSound1','pickupSound2','pickupSound3','impactSound1','impactSound2','impactSound3','crashSound','checkpointSound','nitroSound'];
+let sfxCtx = null;
+const sfxBuffers = {};
+let pickupBufVoices = [], impactBufVoices = [], otherBufVoices = [];
+function getSfxCtx(){
+  if(sfxCtx) return sfxCtx;
+  try{ sfxCtx = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){ sfxCtx = null; }
+  return sfxCtx;
+}
+function loadSfxBuffers(){
+  const ac = getSfxCtx();
+  if(!ac) return;
+  for(const id of SFX_BUFFER_IDS){
+    const el = document.getElementById(id);
+    if(!el || !el.src) continue;
+    fetch(el.src)
+      .then(r=>{ if(!r.ok) throw new Error('http '+r.status); return r.arrayBuffer(); })
+      .then(ab=>new Promise((res,rej)=>ac.decodeAudioData(ab,res,rej)))
+      .then(buf=>{ sfxBuffers[id] = buf; })
+      .catch(()=>{ /* stays on the <audio> fallback path */ });
+  }
+}
+function resumeSfxCtx(){
+  if(sfxCtx && sfxCtx.state==='suspended'){ const p = sfxCtx.resume(); if(p && p.catch) p.catch(()=>{}); }
+}
+// Plays one buffered clip as a cheap one-shot voice. Returns false (caller falls back to
+// the <audio> path) if the buffer isn't decoded yet or the context isn't running.
+function playBufferVoice(id, gainVal, voices, maxVoices, onEnded){
+  const ac = sfxCtx, buf = sfxBuffers[id];
+  if(!ac || !buf || ac.state!=='running') return false;
+  const node = ac.createBufferSource();
+  node.buffer = buf;
+  const g = ac.createGain();
+  g.gain.value = gainVal;
+  node.connect(g);
+  g.connect(ac.destination);
+  const entry = { node, startedAt: performance.now() };
+  node.onended = ()=>{
+    const i = voices.indexOf(entry);
+    if(i>=0) voices.splice(i,1);
+    try{ node.disconnect(); g.disconnect(); }catch(e){}
+    if(onEnded) onEnded();
+  };
+  if(voices.length >= maxVoices){
+    let oldest = voices[0];
+    for(const v of voices){ if(v.startedAt < oldest.startedAt) oldest = v; }
+    const oi = voices.indexOf(oldest);
+    if(oi>=0) voices.splice(oi,1);
+    try{ oldest.node.stop(); }catch(e){}
+  }
+  voices.push(entry);
+  node.start();
+  return true;
+}
+function stopBufferVoices(){
+  for(const arr of [pickupBufVoices, impactBufVoices, otherBufVoices]){
+    for(const v of arr){ try{ v.node.onended = null; v.node.stop(); }catch(e){} }
+    arr.length = 0;
+  }
+}
+
+function tryPlayAllAudio(){ resumeSfxCtx(); if(!sfxMuted){ updateWindSound(); tryPlayEngine(); tryPlayLowFuelSound(); } tryPlayMusic(); }
 tryPlayAllAudio();
+loadSfxBuffers();
 window.addEventListener('pointerdown', tryPlayAllAudio, {once:false});
 document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) tryPlayAllAudio(); });
 
@@ -4918,8 +4990,9 @@ const checkpointSound = document.getElementById('checkpointSound');
 checkpointSound.volume = audioMix.other;
 function playCheckpointSound(){
   if(sfxMuted) return;
-  checkpointSound.currentTime = 0;
   const duckId = duckMusic(CHECKPOINT_DUCK_VOLUME);
+  if(playBufferVoice('checkpointSound', audioMix.other, otherBufVoices, 6, ()=>unduckMusic(duckId))) return;
+  checkpointSound.currentTime = 0;
   checkpointSound.addEventListener('ended', ()=>unduckMusic(duckId), {once:true});
   const p = checkpointSound.play();
   if(p && p.catch) p.catch(()=>{ unduckMusic(duckId); /* blocked until a user gesture unlocks it */ });
@@ -4928,6 +5001,7 @@ const nitroSound = document.getElementById('nitroSound');
 nitroSound.volume = audioMix.other;
 function playNitroSound(){
   if(sfxMuted) return;
+  if(playBufferVoice('nitroSound', audioMix.other, otherBufVoices, 6)) return;
   nitroSound.currentTime = 0;
   nitroSound.volume = audioMix.other;
   const p = nitroSound.play();
@@ -4938,6 +5012,7 @@ const pitstopSound = document.getElementById('pitstopSound');
 pitstopSound.volume = audioMix.other;
 function playPitstopSound(){
   if(sfxMuted) return;
+  if(playBufferVoice('pitstopSound', audioMix.other, otherBufVoices, 6)) return;
   pitstopSound.currentTime = 0;
   const p = pitstopSound.play();
   if(p && p.catch) p.catch(()=>{});
@@ -4956,7 +5031,9 @@ const pickupSoundSources = ['pickupSound1','pickupSound2','pickupSound3'].map(id
 let pickupVoices = []; // {el, startedAt} — currently-playing clones, oldest first isn't guaranteed order, sorted by startedAt when evicting
 function playPickupSound(){
   if(sfxMuted) return;
-  const src = pickupSoundSources[randInt(0, pickupSoundSources.length-1)];
+  const pick = randInt(0, pickupSoundSources.length-1);
+  if(playBufferVoice('pickupSound'+(pick+1), audioMix.pickups, pickupBufVoices, 3)) return;
+  const src = pickupSoundSources[pick];
   const voice = src.cloneNode(true);
   voice.currentTime = 0;
   voice.volume = audioMix.pickups;
@@ -4988,7 +5065,9 @@ const impactSoundSources = ['impactSound1','impactSound2','impactSound3'].map(id
 let impactVoices = [];
 function playImpactSound(){
   if(sfxMuted) return;
-  const src = impactSoundSources[randInt(0, impactSoundSources.length-1)];
+  const pick = randInt(0, impactSoundSources.length-1);
+  if(playBufferVoice('impactSound'+(pick+1), audioMix.impacts, impactBufVoices, 3)) return;
+  const src = impactSoundSources[pick];
   const voice = src.cloneNode(true);
   voice.currentTime = 0;
   voice.volume = audioMix.impacts;
@@ -5021,6 +5100,7 @@ function playImpactSound(){
 const crashSound = document.getElementById('crashSound');
 function playCrashSound(){
   if(sfxMuted) return;
+  if(playBufferVoice('crashSound', audioMix.impacts, impactBufVoices, 3)) return;
   crashSound.currentTime = 0;
   const p = crashSound.play();
   if(p && p.catch) p.catch(()=>{ /* file missing, blocked, etc — fail silently */ });
@@ -5246,7 +5326,7 @@ function spawnDuePitstopItems(){
         continue;
       }
       const spriteCol = type==='fuel' ? OBJ_GASCAN_COL : (Math.random()<0.5 ? OBJ_SPANNER_COL : OBJ_SCREWDRIVER_COL);
-      objects.push({type, worldY:wy, relOffset:w.relOffset, alive:true, size:35.28, bob:rand(0,6.28), spriteCol});
+      objects.push({type, worldY:wy, relOffset:w.relOffset, alive:true, size:35.28, bob:rand(0,6.28), spriteCol, pit:true});
       w.nextItemIdx++;
     }
   }
@@ -6023,6 +6103,27 @@ function drawObjects(){
     const hw = roadHalfWidthAt(o.worldY);
     const ox = c + o.relOffset*hw;
     if(o.type==='obstacle'||o.type==='fuel'||o.type==='repair'){
+      if(o.pit){
+        // Pitstop items: a dozen of these sit within a few car-lengths of each other, so a
+        // per-item ctx.filter (a full offscreen filter pass each) stacked up right as the
+        // pitstop began. At night they get a cheap additive second draw of the same sprite
+        // instead — same "brightens as it approaches" feel, no filter pass.
+        const bob = Math.sin(t*3+o.bob)*3;
+        const col = o.type==='fuel' ? OBJ_GASCAN_COL : o.spriteCol;
+        drawSpinPulseSprite(col, ox, sy+bob, o.size, t, o.bob);
+        if(isNight){
+          const raw = clamp(sy/H, 0, 1);
+          const prox = raw<NIGHT_GLOW_START ? 0 : (raw-NIGHT_GLOW_START)/(1-NIGHT_GLOW_START);
+          if(prox>0){
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            ctx.globalAlpha = Math.min(0.6, prox*0.6);
+            drawSpinPulseSprite(col, ox, sy+bob, o.size, t, o.bob);
+            ctx.restore();
+          }
+        }
+        continue;
+      }
       const glowFilter = nightProximityFilter(sy);
       if(glowFilter){ ctx.save(); ctx.filter = glowFilter; }
       if(o.type==='obstacle'){
@@ -6065,30 +6166,46 @@ function drawObjects(){
 // "PITSTOP" painted on the road surface, roughly 4s of travel before the item line —
 // driven straight off pitstopWarnings (not the `objects` array — see spawnPitstop()
 // for why) so it isn't deleted before it ever scrolls into view.
+// The "PITSTOP" road text is pre-rendered once onto a small offscreen canvas (same idea as
+// the CHECKPOINT label below) instead of rebuilding the font, measuring and shadowBlur-ing
+// the text on every frame the sign is on screen — shadowBlur was a measurable per-frame
+// cost right as the pitstop's pickups and stinger kick in. Re-baked only if the screen
+// height changes or the web font finishes loading after the first bake.
+const pitstopLabelCanvas = document.createElement('canvas');
+const pitstopLabelCtx = pitstopLabelCanvas.getContext('2d');
+let pitstopLabelKey = '';
+function ensurePitstopLabel(){
+  const px = Math.max(1, Math.round(H*0.05));
+  let fontOk = false;
+  try{ fontOk = !!(document.fonts && document.fonts.check('bold '+px+'px "Press Start 2P"')); }catch(e){}
+  const key = px+'|'+fontOk;
+  if(key===pitstopLabelKey && pitstopLabelCanvas.width>0) return;
+  pitstopLabelKey = key;
+  const font = 'bold '+px+'px "Press Start 2P", monospace';
+  pitstopLabelCtx.font = font;
+  const m = pitstopLabelCtx.measureText('PITSTOP');
+  const pad = 12;
+  pitstopLabelCanvas.width = Math.ceil(m.width + pad*2);
+  pitstopLabelCanvas.height = Math.ceil(px*1.45 + pad*2);
+  pitstopLabelCtx.font = font; // resizing a canvas resets its context state
+  pitstopLabelCtx.textAlign = 'center';
+  pitstopLabelCtx.textBaseline = 'middle';
+  pitstopLabelCtx.fillStyle = '#ff2b2b';
+  pitstopLabelCtx.shadowColor = 'rgba(0,0,0,0.6)';
+  pitstopLabelCtx.shadowBlur = 6;
+  pitstopLabelCtx.fillText('PITSTOP', pitstopLabelCanvas.width/2, pitstopLabelCanvas.height/2);
+}
 function drawPitstopSigns(){
   const playerScreenY = H*0.76;
   for(const w of pitstopWarnings){
     const sy = playerScreenY - (w.warnY - scrollY);
     if(sy<-60 || sy>H+60) continue;
+    ensurePitstopLabel();
     const ox = roadCenterXAt(w.warnY);
     const roadW = roadHalfWidthAt(w.warnY)*2*0.92; // clamp to the road surface at this point, with a small margin
-    ctx.save();
-    ctx.font = 'bold '+(H*0.05)+'px "Press Start 2P", monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#ff2b2b';
-    ctx.shadowColor = 'rgba(0,0,0,0.6)';
-    ctx.shadowBlur = 6;
-    const textW = ctx.measureText('PITSTOP').width;
-    if(textW > roadW){
-      const s = roadW/textW;
-      ctx.translate(ox, sy);
-      ctx.scale(s, 1);
-      ctx.fillText('PITSTOP', 0, 0);
-    } else {
-      ctx.fillText('PITSTOP', ox, sy);
-    }
-    ctx.restore();
+    const drawW = Math.min(pitstopLabelCanvas.width, roadW); // squashes horizontally only, like the old ctx.scale(s,1)
+    const drawH = pitstopLabelCanvas.height;
+    ctx.drawImage(pitstopLabelCanvas, ox-drawW/2, sy-drawH/2, drawW, drawH);
   }
 }
 
