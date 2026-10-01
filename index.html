@@ -102,6 +102,15 @@
     font-family:'Courier New',Courier,monospace;color:#fff;
   }
   #serviceMenuSubtitle{color:#ff3030;text-align:center;font-size:clamp(0.6rem,2.4vw,0.78rem);margin-bottom:3.2vmin;letter-spacing:1px;}
+  /* 25% larger service-menu text + bold text across all three hidden service screens */
+  #serviceMenuPanel{font-weight:bold;}
+  #serviceMenuSubtitle{font-size:clamp(0.75rem,3vw,0.975rem);}
+  #serviceMenuPanel .svcRow{font-size:clamp(0.725rem,2.875vw,0.95rem);}
+  #serviceMenuPanel .svcBtn{font-size:clamp(0.725rem,2.875vw,0.95rem);font-weight:bold;}
+  #audioLevelsPanel{font-weight:bold;}
+  #audioLevelsPanel .audioLevelLabel,#audioLevelsPanel .audioLevelValue,#audioLevelsPanel .svcBtn{font-weight:bold;}
+  #powerupMenuPanel{font-weight:bold;}
+  #powerupMenuPanel .svcBtn,.powerupValue{font-weight:bold;}
   .svcRow{display:flex;justify-content:space-between;align-items:baseline;gap:1vmin;padding:1.5vmin 0;border-bottom:1px dashed #3a3a3a;font-size:clamp(0.58rem,2.3vw,0.76rem);}
   .svcLabel{color:#fff;letter-spacing:0.5px;}
   .svcValue{color:#ff3030;font-weight:bold;text-align:right;white-space:nowrap;}
@@ -123,10 +132,11 @@
   #audioLevelsWrap{position:fixed;inset:0;z-index:1005;display:flex;align-items:center;justify-content:center;background:#000;overflow-y:auto;}
   #audioLevelsWrap.hidden{display:none !important;}
   #audioLevelsPanel{width:380px;max-width:92vw;max-height:96vh;overflow-y:auto;background:#000;border:2px solid #fff;padding:4vmin 4.5vmin;font-family:'Courier New',Courier,monospace;color:#fff;}
-  #audioLevelsSubtitle{color:#ff3030;text-align:center;font-size:clamp(0.6rem,2.4vw,0.78rem);margin-bottom:3.2vmin;letter-spacing:1px;}
+  #audioLevelsSubtitle{color:#ff3030;text-align:center;font-size:clamp(0.9rem,3.6vw,1.17rem);margin-bottom:3.2vmin;letter-spacing:1px;}
   .audioLevelRow{margin-top:2.8vmin;}
-  .audioLevelLabel{display:block;color:#fff;font-size:clamp(0.62rem,2.4vw,0.8rem);letter-spacing:1px;margin-bottom:1.3vmin;}
+  .audioLevelLabel{display:block;color:#fff;font-size:clamp(0.93rem,3.6vw,1.2rem);letter-spacing:1px;margin-bottom:1.3vmin;}
   .audioLevelValue{float:right;color:#ff3030;}
+  #audioLevelsPanel .svcBtn{font-size:clamp(0.87rem,3.45vw,1.14rem);}
   .audioLevelSlider{display:block;width:100%;height:18px;margin:0;padding:0;accent-color:#ff3030;background:transparent;cursor:pointer;}
   .audioLevelSlider::-webkit-slider-runnable-track{height:2px;background:#ff3030;border:none;}
   .audioLevelSlider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;margin-top:-6px;background:#fff;border:1px solid #fff;border-radius:0;}
@@ -548,6 +558,7 @@
 <audio id="checkpointSound" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/checkpoint.mp3" preload="auto" playsinline></audio>
 <audio id="pitstopSound" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/pits.mp3" preload="auto" playsinline></audio>
 <audio id="windSound" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/wind.mp3" loop preload="auto" playsinline></audio>
+<audio id="rainSound" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/rain.mp3" loop preload="auto" playsinline></audio>
 <audio id="winnerSound" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/winner.mp3" preload="auto" playsinline></audio>
 <audio id="pickupSound1" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/ding1.mp3" preload="auto" playsinline></audio>
 <audio id="pickupSound2" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/ding2.mp3" preload="auto" playsinline></audio> 
@@ -842,13 +853,13 @@
 
       <button class="svcBtn danger" id="btnSvcResetHS">RESET HIGH SCORES</button>
       <button class="svcBtn danger" id="btnSvcResetStats">RESET TIME / GAME COUNT</button>
+      <button class="svcBtn danger" id="btnSvcResetDefaults">RESET DEFAULT SETTINGS</button>
       <button class="svcBtn" id="btnSvcScanlineToggle">SCANLINES: OFF</button>
       <button class="svcBtn" id="btnSvcScanlineAlpha">TRANSPARENCY: 25%</button>
       <button class="svcBtn" id="btnSvcScanlineWidth">WIDTH: NORMAL</button>
       <button class="svcBtn" id="btnSvcRollingCrt">ROLLING CRT: OFF</button>
       <button class="svcBtn" id="btnSvcColorBar">COLOUR BAR TEST</button>
       <button class="svcBtn" id="btnSvcTestPattern">TEST PATTERN</button>
-      <button class="svcBtn" id="btnSvcMPlusMusic">MATURE SOUNDTRACK: OFF</button>
       <button class="svcBtn" id="btnSvcAudioLevels">Audio levels</button>
       <button class="svcBtn" id="btnSvcPowerupMenu">POWERUP MENU</button>
       <button class="svcBtn exit" id="btnSvcExit">EXIT</button>
@@ -860,10 +871,13 @@
     <div id="audioLevelsPanel">
       <div id="audioLevelsSubtitle">AUDIO LEVELS</div>
       <div class="audioLevelRow"><span class="audioLevelLabel">Music <span class="audioLevelValue" id="audioMusicValue">100%</span></span><input class="audioLevelSlider" id="audioMusicSlider" type="range" min="0" max="100" step="1" value="100"></div>
-      <div class="audioLevelRow"><span class="audioLevelLabel">Bckgrnd Cars <span class="audioLevelValue" id="audioCarsValue">100%</span></span><input class="audioLevelSlider" id="audioCarsSlider" type="range" min="0" max="100" step="1" value="100"></div>
-      <div class="audioLevelRow"><span class="audioLevelLabel">Other sounds <span class="audioLevelValue" id="audioOtherValue">100%</span></span><input class="audioLevelSlider" id="audioOtherSlider" type="range" min="0" max="100" step="1" value="100"></div>
-      <div class="audioLevelRow"><span class="audioLevelLabel">Player car <span class="audioLevelValue" id="audioPlayerValue">100%</span></span><input class="audioLevelSlider" id="audioPlayerSlider" type="range" min="0" max="100" step="1" value="100"></div>
+      <div class="audioLevelRow"><span class="audioLevelLabel">Bckgrnd Cars <span class="audioLevelValue" id="audioCarsValue">38%</span></span><input class="audioLevelSlider" id="audioCarsSlider" type="range" min="0" max="100" step="1" value="38"></div>
+      <div class="audioLevelRow"><span class="audioLevelLabel">Other sounds <span class="audioLevelValue" id="audioOtherValue">58%</span></span><input class="audioLevelSlider" id="audioOtherSlider" type="range" min="0" max="100" step="1" value="58"></div>
+      <div class="audioLevelRow"><span class="audioLevelLabel">Pickups <span class="audioLevelValue" id="audioPickupsValue">24%</span></span><input class="audioLevelSlider" id="audioPickupsSlider" type="range" min="0" max="100" step="1" value="24"></div>
+      <div class="audioLevelRow"><span class="audioLevelLabel">Impacts / Crashes <span class="audioLevelValue" id="audioImpactsValue">15%</span></span><input class="audioLevelSlider" id="audioImpactsSlider" type="range" min="0" max="100" step="1" value="15"></div>
+      <div class="audioLevelRow"><span class="audioLevelLabel">Player car <span class="audioLevelValue" id="audioPlayerValue">18%</span></span><input class="audioLevelSlider" id="audioPlayerSlider" type="range" min="0" max="100" step="1" value="18"></div>
       <div class="audioLevelRow"><span class="audioLevelLabel">Master volume <span class="audioLevelValue" id="audioMasterValue">100%</span></span><input class="audioLevelSlider" id="audioMasterSlider" type="range" min="0" max="100" step="1" value="100"></div>
+      <button class="svcBtn" id="btnSvcMPlusMusic">MATURE SOUNDTRACK: OFF</button>
       <button class="svcBtn exit" id="btnAudioLevelsExit">EXIT</button>
     </div>
   </div>
@@ -1028,7 +1042,7 @@ function updateWeather(dt){
         weather = weatherTransition.to.weather;
         isNight = weatherTransition.to.night;
         weatherTransition = null;
-        updateWindSound();
+        updateWeatherAmbience(0);
         document.getElementById('hud').classList.toggle('hudBright', weather==='rain'||weather==='snow');
       }
     } else {
@@ -1039,7 +1053,24 @@ function updateWeather(dt){
         // weather persistence is fine and expected — only start a visible fade when the
         // weighted pick actually landed on something different
         if(next.weather!==weather || next.night!==isNight){
+          const fromWeather = weather;
           weatherTransition = {from:{weather, night:isNight}, to:next, t:0, dur:WEATHER_FADE_DUR};
+          if(!sfxMuted){
+            // Crossfade the ambience at the same rate as the visual weather transition.
+            const target = weatherAmbienceTarget(next.weather);
+            ensureWeatherAmbiencePlaying(next.weather);
+            const startWind = windSound.volume, startRain = rainSound.volume;
+            const startTime = performance.now(), fadeDur = WEATHER_FADE_DUR*1000;
+            if(weatherAmbienceFadeRAF) cancelAnimationFrame(weatherAmbienceFadeRAF);
+            (function weatherAudioStep(){
+              if(!weatherTransition) return;
+              const t = Math.min(1,(performance.now()-startTime)/fadeDur);
+              windSound.volume = startWind + (target.wind-startWind)*t;
+              rainSound.volume = startRain + (target.rain-startRain)*t;
+              if(t<1) weatherAmbienceFadeRAF=requestAnimationFrame(weatherAudioStep);
+              else weatherAmbienceFadeRAF=null;
+            })();
+          }
         }
       }
     }
@@ -2032,8 +2063,8 @@ const DIFFICULTY = {
   // roadWidthMult/narrowMinMult eased on hard (its base+pinch width was too punishing);
   // curveAmpMult/curveFreqMult raised across all three (corners weren't pronounced enough anywhere)
   easy:         { roadWidthMult:1.08, curveAmpMult:0.95, curveFreqMult:0.95, obstacleIntervalMult:1.35, repairChance:0.5,  narrowMinMult:0.68, narrowGapMult:1.4 },
-  intermediate: { roadWidthMult:1.0,  curveAmpMult:1.25, curveFreqMult:1.15, obstacleIntervalMult:1.0,  repairChance:0.25, narrowMinMult:0.62, narrowGapMult:1.0 },
-  hard:         { roadWidthMult:1.0282, curveAmpMult:1.6,  curveFreqMult:1.35, obstacleIntervalMult:0.68, repairChance:0.12, narrowMinMult:0.58, narrowGapMult:0.7 } // roadWidthMult was 0.97, widened 6%
+  intermediate: { roadWidthMult:1.05, curveAmpMult:1.35, curveFreqMult:1.22, obstacleIntervalMult:1.0,  repairChance:0.25, narrowMinMult:0.62, narrowGapMult:1.0 },
+  hard:         { roadWidthMult:1.045, curveAmpMult:1.45, curveFreqMult:1.60, obstacleIntervalMult:0.68, repairChance:0.12, narrowMinMult:0.58, narrowGapMult:0.55 } // roadWidthMult was 0.97, widened 6%
 };
 let difficulty = 'intermediate'; // set by selectDifficulty(); read by name everywhere below
 // 'race' (default, unchanged behaviour) or 'scenic' — set by selectGameMode() on the
@@ -2844,6 +2875,11 @@ document.getElementById('btnSvcResetStats').addEventListener('pointerdown', (e)=
   e.stopPropagation();
   document.getElementById('resetStatsConfirmWrap').classList.remove('hidden');
 });
+document.getElementById('btnSvcResetDefaults').addEventListener('pointerdown', (e)=>{
+  e.preventDefault();
+  e.stopPropagation();
+  resetDefaultSettings();
+});
 document.getElementById('btnResetStatsYes').addEventListener('pointerdown', (e)=>{
   e.preventDefault();
   e.stopPropagation();
@@ -2960,7 +2996,7 @@ document.getElementById('btnPowerupExit').addEventListener('pointerdown',(e)=>{
   document.getElementById('serviceMenuWrap').classList.remove('hidden');
 });
 document.getElementById('btnSvcAudioLevels').addEventListener('pointerdown',(e)=>{ e.preventDefault(); e.stopPropagation(); openAudioLevels(); });
-for(const [id,key] of [['audioMusicSlider','music'],['audioCarsSlider','cars'],['audioOtherSlider','other'],['audioPlayerSlider','player'],['audioMasterSlider','master']]){
+for(const [id,key] of [['audioMusicSlider','music'],['audioCarsSlider','cars'],['audioOtherSlider','other'],['audioPickupsSlider','pickups'],['audioImpactsSlider','impacts'],['audioPlayerSlider','player'],['audioMasterSlider','master']]){
   document.getElementById(id).addEventListener('input',()=>{
     audioLevels[key]=Math.max(0,Math.min(1,Number(document.getElementById(id).value)/100));
     const valueId=id.replace('Slider','Value'); document.getElementById(valueId).textContent=Math.round(audioLevels[key]*100)+'%';
@@ -3076,6 +3112,41 @@ function incGamesStarted(){
 function resetStats(){
   svcPlaySecondsPending = 0;
   try{ localStorage.setItem(SVC_TIME_KEY, '0'); localStorage.setItem(SVC_GAMES_KEY, '0'); }catch(e){}
+}
+
+function resetDefaultSettings(){
+  // Restore user-configurable service settings without touching high scores or
+  // cumulative time/game statistics. These are the defaults presented on a fresh install.
+  audioLevels = { music:1, cars:0.38, other:0.58, pickups:0.24, impacts:0.32, player:0.18, master:1 };
+  powerupRates = {fuel:1, repair:1, turbo:1, obstacles:1};
+  scanlineOn = false;
+  scanlineTransparency = 25;
+  scanlineWidthMult = 1;
+  rollingCrtOn = false;
+  mPlusMusicUnlocked = false;
+  audioMode = 0;
+  musicMuted = false;
+  sfxMuted = false;
+  try{
+    localStorage.setItem(AUDIO_LEVEL_KEY, JSON.stringify(audioLevels));
+    localStorage.setItem(POWERUP_RATE_KEY, JSON.stringify(powerupRates));
+    localStorage.setItem(SVC_SCANLINE_ON_KEY, '0');
+    localStorage.setItem(SVC_SCANLINE_ALPHA_KEY, '25');
+    localStorage.setItem(SVC_SCANLINE_WIDTH_KEY, '1');
+    localStorage.setItem(SVC_ROLLING_CRT_KEY, '0');
+    localStorage.setItem('turboPursuitMPlusMusicUnlocked', '0');
+    localStorage.setItem('turboPursuitAudioMode', '0');
+    localStorage.removeItem('turboPursuitMusicMuted');
+  }catch(e){}
+  refreshAudioMix();
+  if(typeof applyMusicLevel==='function') applyMusicLevel();
+  if(typeof applySfxLevels==='function') applySfxLevels();
+  if(typeof refreshAudioLevelsUI==='function') refreshAudioLevelsUI();
+  if(typeof refreshPowerupMenuUI==='function') refreshPowerupMenuUI();
+  if(typeof updateMusicToggleLabel==='function') updateMusicToggleLabel();
+  if(typeof applyScanlineOverlay==='function') applyScanlineOverlay();
+  if(typeof applyRollingCrt==='function') applyRollingCrt();
+  if(typeof refreshServiceMenuDisplay==='function') refreshServiceMenuDisplay();
 }
 function formatHMS(totalSec){
   const s = Math.floor(totalSec);
@@ -3931,7 +4002,7 @@ const BASE_MUSIC_VOLUME = 0.7;
 
 /* service-menu audio mixer. Values are 0..1 and persist locally. */
 const AUDIO_LEVEL_KEY = 'grandRally63AudioLevels';
-let audioLevels = { music:1, cars:1, other:1, player:0.75, master:1 };
+let audioLevels = { music:1, cars:0.38, other:0.58, pickups:0.24, impacts:0.32, player:0.18, master:1 };
 try{
   const saved = JSON.parse(localStorage.getItem(AUDIO_LEVEL_KEY) || 'null');
   if(saved && typeof saved === 'object'){
@@ -3945,27 +4016,38 @@ function saveAudioLevels(){ try{ localStorage.setItem(AUDIO_LEVEL_KEY, JSON.stri
 
 // Cached mixer gains. These are recalculated only when a level actually changes,
 // never during the game loop or while individual sounds are playing.
-let audioMix = { music:0.7, cars:1, other:1, player:1 };
+let audioMix = { music:0.7, cars:1, other:1, pickups:1, impacts:1, player:1 };
 function refreshAudioMix(){
   const master = Math.max(0, Math.min(1, audioLevels.master));
   audioMix.music = Math.max(0, Math.min(1, audioLevels.music * master));
   audioMix.cars = Math.max(0, Math.min(1, audioLevels.cars * master));
   audioMix.other = Math.max(0, Math.min(1, audioLevels.other * master));
+  audioMix.pickups = Math.max(0, Math.min(1, audioLevels.pickups * master));
+  audioMix.impacts = Math.max(0, Math.min(1, audioLevels.impacts * master));
   audioMix.player = Math.max(0, Math.min(1, audioLevels.player * master));
 }
 refreshAudioMix();
 function musicLevelTarget(v){ return Math.max(0, Math.min(1, v * audioMix.music)); }
 function applyMusicLevel(){
+  refreshAudioMix();
   if(typeof bgMusic!=='undefined') bgMusic.volume = musicLevelTarget(activeDucks.size ? Math.min(...activeDucks.values()) : BASE_MUSIC_VOLUME);
 }
 function applySfxLevels(){
-  const other = Math.max(0, Math.min(1, audioLevels.other * audioLevels.master));
-  const cars = Math.max(0, Math.min(1, audioLevels.cars * audioLevels.master));
-  const player = Math.max(0, Math.min(1, audioLevels.player * audioLevels.master));
+  refreshAudioMix();
+  const other = audioMix.other;
+  const cars = audioMix.cars;
+  const pickups = audioMix.pickups;
+  const impacts = audioMix.impacts;
+  const player = audioMix.player;
   if(typeof carSound!=='undefined') carSound.volume = cars;
-  for(const id of ['goSound','lowFuelSound','thunderSound','checkpointSound','pitstopSound','windSound','winnerSound','pickupSound1','pickupSound2','pickupSound3','impactSound1','impactSound2','impactSound3','crashSound','nitroSound']){
+  const otherIds = ['goSound','lowFuelSound','thunderSound','checkpointSound','pitstopSound','windSound','rainSound','winnerSound','nitroSound'];
+  const pickupIds = ['pickupSound1','pickupSound2','pickupSound3'];
+  const impactIds = ['impactSound1','impactSound2','impactSound3','crashSound'];
+  for(const id of [...otherIds,...pickupIds,...impactIds]){
     const el=document.getElementById(id); if(el) el.dataset.audioBaseVolume = el.dataset.audioBaseVolume || String(el.volume || 1);
-    if(el && id!=='windSound' && id!=='lowFuelSound') el.volume = Math.max(0, Math.min(1, Number(el.dataset.audioBaseVolume)||1)) * other;
+    if(!el || id==='windSound' || id==='rainSound' || id==='lowFuelSound') continue;
+    const groupGain = pickupIds.includes(id) ? pickups : impactIds.includes(id) ? impacts : other;
+    el.volume = Math.max(0, Math.min(1, Number(el.dataset.audioBaseVolume)||1)) * groupGain;
   }
   if(typeof lowFuelSound!=='undefined' && lowFuelSound){ lowFuelSound.dataset.audioBaseVolume = lowFuelSound.dataset.audioBaseVolume || String(LOW_FUEL_VOLUME); }
   // Short ramp rather than a direct .value snap — same click-avoidance reasoning as
@@ -3974,7 +4056,7 @@ function applySfxLevels(){
   if(typeof engineMaster!=='undefined' && engineMaster) engineMaster.gain.setTargetAtTime(0.55 * player, engineAudioCtx.currentTime, 0.05);
 }
 function refreshAudioLevelsUI(){
-  const map=[['Music','music'],['Cars','cars'],['Other','other'],['Player','player'],['Master','master']];
+  const map=[['Music','music'],['Cars','cars'],['Other','other'],['Pickups','pickups'],['Impacts','impacts'],['Player','player'],['Master','master']];
   for(const [id,key] of map){ const slider=document.getElementById('audio'+id+'Slider'); const value=document.getElementById('audio'+id+'Value'); if(slider) slider.value=Math.round(audioLevels[key]*100); if(value) value.textContent=Math.round(audioLevels[key]*100)+'%'; }
 }
 
@@ -4105,7 +4187,8 @@ function tryPlayMusic(){
 function stopAllSfx(){
   if(typeof carSound!=='undefined'){ carSound.pause(); carSound.currentTime=0; }
   pauseProceduralEngine();
-  if(typeof windSound!=='undefined'){ windSound.pause(); windSound.currentTime=0; windSound.volume=0; }
+  if(typeof windSound!=='undefined'){ windSound.pause(); windSound.currentTime=0; windSound.volume=0; windLoopActive=false; }
+  if(typeof rainSound!=='undefined'){ rainSound.pause(); rainSound.currentTime=0; rainSound.volume=0; rainLoopActive=false; }
   if(typeof lowFuelSound!=='undefined'){ lowFuelSound.pause(); lowFuelSound.currentTime=0; lowFuelSound.volume=LOW_FUEL_VOLUME; lowFuelFading=false; lowFuelFadeT=0; }
   if(typeof goSound!=='undefined'){ goSound.pause(); goSound.currentTime=0; }
   if(typeof checkpointSound!=='undefined'){ checkpointSound.pause(); checkpointSound.currentTime=0; }
@@ -4165,57 +4248,91 @@ MUSIC_BAR_HIDERS.forEach(id=>{
 });
 syncMusicBarVisibility();
 
-/* snow weather ambience: a looping wind track that breathes up and down on its
-   own schedule — ramp up over 2-3s, hold at full volume for 2-4s, ramp back
-   down over 2-3s, repeat — for as long as weather stays 'snow'. Independent
-   fade state (windFadeRAF) from the music ducking above so the two never
-   fight over the same rAF handle. */
+/* weather ambience: wind on snow and rain on rain. Both tracks are true loops and
+   are crossfaded with the weather itself. A manual weather pick gets a short fade;
+   RANDOM CONDITIONS uses the same 3-second weather transition so clear -> rain -> snow
+   sounds like one continuous changing environment rather than a hard audio cut. */
 const windSound = document.getElementById('windSound');
+const rainSound = document.getElementById('rainSound');
 let windLoopActive = false;
-let windLoopTimeout = null;
-let windFadeRAF = null;
-function fadeWindTo(target, duration, onDone){
-  if(windFadeRAF) cancelAnimationFrame(windFadeRAF);
-  const start = windSound.volume;
+let rainLoopActive = false;
+let weatherAmbienceFadeRAF = null;
+
+function weatherAmbienceTarget(condition){
+  const level = Math.max(0, Math.min(1, Number(audioMix.other) || 0));
+  return {
+    wind: condition==='snow' ? level : 0,
+    rain: condition==='rain' ? level : 0
+  };
+}
+function ensureWeatherAmbiencePlaying(condition){
+  const target = weatherAmbienceTarget(condition);
+  if(target.wind>0 && !windLoopActive){
+    windLoopActive = true;
+    windSound.currentTime = 0;
+    windSound.volume = 0;
+    const p = windSound.play();
+    if(p && p.catch) p.catch(()=>{});
+  }
+  if(target.rain>0 && !rainLoopActive){
+    rainLoopActive = true;
+    rainSound.currentTime = 0;
+    rainSound.volume = 0;
+    const p = rainSound.play();
+    if(p && p.catch) p.catch(()=>{});
+  }
+}
+function fadeWeatherAmbienceTo(condition, duration, onDone){
+  if(weatherAmbienceFadeRAF) cancelAnimationFrame(weatherAmbienceFadeRAF);
+  if(sfxMuted){
+    windSound.volume = 0;
+    rainSound.volume = 0;
+    return;
+  }
+  ensureWeatherAmbiencePlaying(condition);
+  const target = weatherAmbienceTarget(condition);
+  const startWind = windSound.volume;
+  const startRain = rainSound.volume;
   const startTime = performance.now();
+  const dur = Math.max(0, Number(duration)||0);
+  if(dur===0){
+    windSound.volume = target.wind;
+    rainSound.volume = target.rain;
+    if(target.wind===0 && windLoopActive){ windSound.pause(); windSound.currentTime=0; windLoopActive=false; }
+    if(target.rain===0 && rainLoopActive){ rainSound.pause(); rainSound.currentTime=0; rainLoopActive=false; }
+    if(onDone) onDone();
+    return;
+  }
   (function step(){
-    const t = Math.min(1, (performance.now()-startTime)/duration);
-    windSound.volume = start + (target-start)*t;
-    if(t<1){ windFadeRAF = requestAnimationFrame(step); }
-    else{ windFadeRAF = null; if(onDone) onDone(); }
+    const t = Math.min(1, (performance.now()-startTime)/dur);
+    windSound.volume = startWind + (target.wind-startWind)*t;
+    rainSound.volume = startRain + (target.rain-startRain)*t;
+    if(t<1){ weatherAmbienceFadeRAF = requestAnimationFrame(step); }
+    else{
+      weatherAmbienceFadeRAF = null;
+      if(target.wind===0 && windLoopActive){ windSound.pause(); windSound.currentTime=0; windLoopActive=false; }
+      if(target.rain===0 && rainLoopActive){ rainSound.pause(); rainSound.currentTime=0; rainLoopActive=false; }
+      if(onDone) onDone();
+    }
   })();
 }
-function windLoopStep(){
-  if(!windLoopActive) return;
-  fadeWindTo(audioMix.other, rand(2,3)*1000, ()=>{
-    if(!windLoopActive) return;
-    windLoopTimeout = setTimeout(()=>{
-      if(!windLoopActive) return;
-      fadeWindTo(0, rand(2,3)*1000, windLoopStep);
-    }, rand(2,4)*1000);
-  });
-}
-function startWindLoop(){
-  if(sfxMuted || windLoopActive) return;
-  windLoopActive = true;
-  windSound.currentTime = 0;
-  windSound.volume = 0;
-  const p = windSound.play();
-  if(p && p.catch) p.catch(()=>{ /* blocked until a user gesture unlocks it; loop still starts once it does */ });
-  windLoopStep();
-}
-function stopWindLoop(){
-  if(!windLoopActive) return;
-  windLoopActive = false;
-  if(windFadeRAF) cancelAnimationFrame(windFadeRAF);
-  if(windLoopTimeout) clearTimeout(windLoopTimeout);
-  windSound.pause();
-  windSound.volume = 0;
+function updateWeatherAmbience(fadeMs=1500){
+  if(sfxMuted){
+    if(weatherAmbienceFadeRAF) cancelAnimationFrame(weatherAmbienceFadeRAF);
+    weatherAmbienceFadeRAF = null;
+    windSound.pause(); rainSound.pause();
+    windSound.currentTime = 0; rainSound.currentTime = 0;
+    windSound.volume = 0; rainSound.volume = 0;
+    windLoopActive = false; rainLoopActive = false;
+    return;
+  }
+  fadeWeatherAmbienceTo(weather, fadeMs);
 }
 function updateWindSound(){
-  if(weather==='snow') startWindLoop(); else stopWindLoop();
+  // Kept as the existing call site name for compatibility throughout the game.
+  // It now controls both weather ambience tracks.
+  updateWeatherAmbience(1500);
 }
-
 
 /* ---------------- procedural engine sound ----------------
    Each car/era class gets its own plain-text settings string. The parser below
@@ -4752,7 +4869,7 @@ function playPickupSound(){
   const src = pickupSoundSources[randInt(0, pickupSoundSources.length-1)];
   const voice = src.cloneNode(true);
   voice.currentTime = 0;
-  voice.volume = audioMix.other;
+  voice.volume = audioMix.pickups;
   const entry = { el: voice, startedAt: performance.now() };
   const removeVoice = ()=>{
     const i = pickupVoices.indexOf(entry);
@@ -4784,7 +4901,7 @@ function playImpactSound(){
   const src = impactSoundSources[randInt(0, impactSoundSources.length-1)];
   const voice = src.cloneNode(true);
   voice.currentTime = 0;
-  voice.volume = audioMix.other;
+  voice.volume = audioMix.impacts;
   const entry = { el: voice, startedAt: performance.now() };
   const removeVoice = ()=>{
     const i = impactVoices.indexOf(entry);
