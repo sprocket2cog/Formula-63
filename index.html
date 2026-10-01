@@ -114,6 +114,31 @@
   .svcBtn.danger{color:#ff3030;border-color:#ff3030;}
   #btnSvcMPlusMusic{color:#ff3030;border-color:#ff3030;}
   .svcBtn.exit{margin-top:3.2vmin;}
+
+  /* powerup service menu: 50% larger text for readability */
+  #powerupMenuPanel .svcBtn{font-size:clamp(0.87rem,3.45vw,1.14rem);}
+  #powerupMenuPanel .powerupValue{font-size:1em;}
+
+  /* service-menu audio mixer */
+  #audioLevelsWrap{position:fixed;inset:0;z-index:1005;display:flex;align-items:center;justify-content:center;background:#000;overflow-y:auto;}
+  #audioLevelsWrap.hidden{display:none !important;}
+  #audioLevelsPanel{width:380px;max-width:92vw;max-height:96vh;overflow-y:auto;background:#000;border:2px solid #fff;padding:4vmin 4.5vmin;font-family:'Courier New',Courier,monospace;color:#fff;}
+  #audioLevelsSubtitle{color:#ff3030;text-align:center;font-size:clamp(0.6rem,2.4vw,0.78rem);margin-bottom:3.2vmin;letter-spacing:1px;}
+  .audioLevelRow{margin-top:2.8vmin;}
+  .audioLevelLabel{display:block;color:#fff;font-size:clamp(0.62rem,2.4vw,0.8rem);letter-spacing:1px;margin-bottom:1.3vmin;}
+  .audioLevelValue{float:right;color:#ff3030;}
+  .audioLevelSlider{display:block;width:100%;height:18px;margin:0;padding:0;accent-color:#ff3030;background:transparent;cursor:pointer;}
+  .audioLevelSlider::-webkit-slider-runnable-track{height:2px;background:#ff3030;border:none;}
+  .audioLevelSlider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;margin-top:-6px;background:#fff;border:1px solid #fff;border-radius:0;}
+  .audioLevelSlider::-moz-range-track{height:2px;background:#ff3030;border:none;}
+  .audioLevelSlider::-moz-range-thumb{width:14px;height:14px;background:#fff;border:1px solid #fff;border-radius:0;}
+  #btnAudioLevelsExit{margin-top:4vmin;}
+  #powerupMenuWrap{position:fixed;inset:0;z-index:1005;display:flex;align-items:center;justify-content:center;background:#000;overflow-y:auto;}
+  #powerupMenuWrap.hidden{display:none !important;}
+  #powerupMenuPanel{width:380px;max-width:92vw;max-height:96vh;overflow-y:auto;background:#000;border:2px solid #fff;padding:4vmin 4.5vmin;font-family:'Courier New',Courier,monospace;color:#fff;}
+  #powerupMenuSubtitle{color:#ff3030;text-align:center;font-size:clamp(0.6rem,2.4vw,0.78rem);margin-bottom:3.2vmin;letter-spacing:1px;}
+  #powerupMenuPanel .svcBtn{display:flex;justify-content:space-between;align-items:center;}
+  .powerupValue{color:#ff3030;font-weight:bold;}
   #resetStatsConfirmWrap{position:fixed;inset:0;z-index:1010;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.85);}
   #resetStatsConfirmWrap.hidden{display:none !important;}
   #resetStatsConfirmPanel{text-align:center;width:320px;max-width:88vw;background:#000;border:2px solid #ff3030;padding:4vmin 4vmin;}
@@ -516,7 +541,7 @@
 </head>
 <body>
 <audio id="bgMusic" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/Racer.mp3" loop preload="auto" playsinline></audio>
-<audio id="carSound" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/car.wav" loop preload="auto" playsinline></audio>
+<audio id="carSound" aria-hidden="true" preload="auto" playsinline src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/car.wav"></audio>
 <audio id="goSound" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/go.mp3" preload="auto" playsinline></audio>
 <audio id="lowFuelSound" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/lowfuel.mp3" loop preload="auto" playsinline></audio>
 <audio id="thunderSound" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/thunder.mp3" preload="auto" playsinline></audio>
@@ -823,7 +848,33 @@
       <button class="svcBtn" id="btnSvcColorBar">COLOUR BAR TEST</button>
       <button class="svcBtn" id="btnSvcTestPattern">TEST PATTERN</button>
       <button class="svcBtn" id="btnSvcMPlusMusic">MATURE SOUNDTRACK: OFF</button>
+      <button class="svcBtn" id="btnSvcAudioLevels">Audio levels</button>
+      <button class="svcBtn" id="btnSvcPowerupMenu">POWERUP MENU</button>
       <button class="svcBtn exit" id="btnSvcExit">EXIT</button>
+    </div>
+  </div>
+
+
+  <div id="audioLevelsWrap" class="hidden">
+    <div id="audioLevelsPanel">
+      <div id="audioLevelsSubtitle">AUDIO LEVELS</div>
+      <div class="audioLevelRow"><span class="audioLevelLabel">Music <span class="audioLevelValue" id="audioMusicValue">100%</span></span><input class="audioLevelSlider" id="audioMusicSlider" type="range" min="0" max="100" step="1" value="100"></div>
+      <div class="audioLevelRow"><span class="audioLevelLabel">Bckgrnd Cars <span class="audioLevelValue" id="audioCarsValue">100%</span></span><input class="audioLevelSlider" id="audioCarsSlider" type="range" min="0" max="100" step="1" value="100"></div>
+      <div class="audioLevelRow"><span class="audioLevelLabel">Other sounds <span class="audioLevelValue" id="audioOtherValue">100%</span></span><input class="audioLevelSlider" id="audioOtherSlider" type="range" min="0" max="100" step="1" value="100"></div>
+      <div class="audioLevelRow"><span class="audioLevelLabel">Player car <span class="audioLevelValue" id="audioPlayerValue">100%</span></span><input class="audioLevelSlider" id="audioPlayerSlider" type="range" min="0" max="100" step="1" value="100"></div>
+      <div class="audioLevelRow"><span class="audioLevelLabel">Master volume <span class="audioLevelValue" id="audioMasterValue">100%</span></span><input class="audioLevelSlider" id="audioMasterSlider" type="range" min="0" max="100" step="1" value="100"></div>
+      <button class="svcBtn exit" id="btnAudioLevelsExit">EXIT</button>
+    </div>
+  </div>
+
+  <div id="powerupMenuWrap" class="hidden">
+    <div id="powerupMenuPanel">
+      <div id="powerupMenuSubtitle">POWERUP MENU</div>
+      <button class="svcBtn" id="btnPowerFuel">FUEL <span class="powerupValue" id="powerFuelValue">100%</span></button>
+      <button class="svcBtn" id="btnPowerRepair">REPAIR <span class="powerupValue" id="powerRepairValue">100%</span></button>
+      <button class="svcBtn" id="btnPowerTurbo">TURBO <span class="powerupValue" id="powerTurboValue">100%</span></button>
+      <button class="svcBtn" id="btnPowerObstacles">OBSTACLES <span class="powerupValue" id="powerObstaclesValue">100%</span></button>
+      <button class="svcBtn exit" id="btnPowerupExit">EXIT</button>
     </div>
   </div>
 
@@ -1000,10 +1051,10 @@ function playThunder(){
   const el = document.getElementById('thunderSound');
   if(!el) return;
   try{
-    carSound.pause();
+    pauseProceduralEngine();
     el.currentTime = 0;
-    el.onended = ()=>{ tryPlayEngine(); };
-    el.play().catch(()=>{ tryPlayEngine(); }); // if it can't play at all, don't leave the engine muted
+    el.onended = ()=>{ tryPlayLegacyCarSound(); tryPlayEngine(); };
+    el.play().catch(()=>{ tryPlayLegacyCarSound(); tryPlayEngine(); }); // if it can't play at all, don't leave the engine muted
   }catch(e){ tryPlayEngine(); }
 }
 // Headlight/taillight cones — PERFORMANCE: these used to be rebuilt (path + gradient +
@@ -2604,6 +2655,24 @@ function spawnDueCrowd(){
 // "pitstop" event: every 1-3 minutes, a line of 4 fuel + 4 repair icons is laid down
 // one shoulder of a wide (non-narrowed) stretch of road, with a red road sign and a
 // flashing HUD warning appearing about 4 seconds' travel before the player reaches it.
+const POWERUP_RATE_KEY = 'grandRally63PowerupRates';
+const POWERUP_RATE_STEPS = [0.25,0.5,0.75,1,1.25,1.5,1.75,2];
+let powerupRates = {fuel:1, repair:1, turbo:1, obstacles:1};
+try{
+  const savedPowerupRates = JSON.parse(localStorage.getItem(POWERUP_RATE_KEY) || 'null');
+  if(savedPowerupRates && typeof savedPowerupRates==='object'){
+    for(const k of Object.keys(powerupRates)){
+      const n = Number(savedPowerupRates[k]);
+      if(Number.isFinite(n) && POWERUP_RATE_STEPS.includes(n)) powerupRates[k]=n;
+    }
+  }
+}catch(e){}
+function savePowerupRates(){ try{ localStorage.setItem(POWERUP_RATE_KEY, JSON.stringify(powerupRates)); }catch(e){} }
+function nextPowerupRate(v){
+  const i = POWERUP_RATE_STEPS.indexOf(v);
+  return POWERUP_RATE_STEPS[(i+1+POWERUP_RATE_STEPS.length)%POWERUP_RATE_STEPS.length];
+}
+
 const PITSTOP_PAIR_COUNT = 4; // 4 fuel + 4 repair + 4 turbo(nitros) = 12 icons total, in a repeating fuel/repair/nitros cycle
 const PITSTOP_ITEM_COUNT = PITSTOP_PAIR_COUNT*3;
 const PITSTOP_ITEM_GAP = 110; // world-space spacing between consecutive icons — comfortably clear of each other, no overlap
@@ -2860,6 +2929,45 @@ document.getElementById('btnSvcMPlusMusic').addEventListener('pointerdown', (e)=
     btn.textContent = 'MATURE SOUNDTRACK: OFF';
   }
 });
+function openAudioLevels(){
+  refreshAudioLevelsUI();
+  document.getElementById('serviceMenuWrap').classList.add('hidden');
+  document.getElementById('audioLevelsWrap').classList.remove('hidden');
+}
+function refreshPowerupMenuUI(){
+  for(const [key,id] of [['fuel','powerFuelValue'],['repair','powerRepairValue'],['turbo','powerTurboValue'],['obstacles','powerObstaclesValue']]){
+    document.getElementById(id).textContent = Math.round(powerupRates[key]*100)+'%';
+  }
+}
+function openPowerupMenu(){
+  refreshPowerupMenuUI();
+  document.getElementById('serviceMenuWrap').classList.add('hidden');
+  document.getElementById('powerupMenuWrap').classList.remove('hidden');
+}
+document.getElementById('btnSvcPowerupMenu').addEventListener('pointerdown',(e)=>{ e.preventDefault(); e.stopPropagation(); openPowerupMenu(); });
+for(const [id,key] of [['btnPowerFuel','fuel'],['btnPowerRepair','repair'],['btnPowerTurbo','turbo'],['btnPowerObstacles','obstacles']]){
+  document.getElementById(id).addEventListener('pointerdown',(e)=>{
+    e.preventDefault(); e.stopPropagation();
+    powerupRates[key]=nextPowerupRate(powerupRates[key]);
+    savePowerupRates();
+    refreshPowerupMenuUI();
+  });
+}
+document.getElementById('btnPowerupExit').addEventListener('pointerdown',(e)=>{
+  e.preventDefault(); e.stopPropagation();
+  document.getElementById('powerupMenuWrap').classList.add('hidden');
+  document.getElementById('serviceMenuWrap').classList.remove('hidden');
+});
+document.getElementById('btnSvcAudioLevels').addEventListener('pointerdown',(e)=>{ e.preventDefault(); e.stopPropagation(); openAudioLevels(); });
+for(const [id,key] of [['audioMusicSlider','music'],['audioCarsSlider','cars'],['audioOtherSlider','other'],['audioPlayerSlider','player'],['audioMasterSlider','master']]){
+  document.getElementById(id).addEventListener('input',()=>{
+    audioLevels[key]=Math.max(0,Math.min(1,Number(document.getElementById(id).value)/100));
+    const valueId=id.replace('Slider','Value'); document.getElementById(valueId).textContent=Math.round(audioLevels[key]*100)+'%';
+    saveAudioLevels(); applyMusicLevel(); applySfxLevels();
+  });
+}
+document.getElementById('btnAudioLevelsExit').addEventListener('pointerdown',(e)=>{ e.preventDefault(); e.stopPropagation(); applyMusicLevel(); applySfxLevels(); document.getElementById('audioLevelsWrap').classList.add('hidden'); document.getElementById('serviceMenuWrap').classList.remove('hidden'); });
+
 document.getElementById('btnSvcColorBar').addEventListener('pointerdown', (e)=>{
   e.preventDefault();
   e.stopPropagation();
@@ -3156,11 +3264,11 @@ function resetRun(){
   player.x = roadCenterXAt(scrollY);
   player.carIdx = selectedCarIdx;
   player.vx = 0;
-  spawnObstacleT = rand(1.2,2.2)*DIFFICULTY[difficulty].obstacleIntervalMult*OBSTACLE_RATE_MULT;
+  spawnObstacleT = rand(1.2,2.2)*DIFFICULTY[difficulty].obstacleIntervalMult*OBSTACLE_RATE_MULT/powerupRates.obstacles;
   spawnAiT = rand(5,8); // AI cars now close in slowly (a fraction of scroll speed), so they linger
                          // on screen ~4-5x longer than before — spacing spawns out keeps the count
                          // settling around 3-4 cars instead of pinning the MAX_AI_ONSCREEN cap
-  spawnTurboT = rand(14,22); // first turbo boost arrives a bit into the run
+  spawnTurboT = rand(14,22)/powerupRates.turbo; // first turbo boost arrives a bit into the run
   burstGapT = rand(0.8,2); // first burst arrives soon after the run starts
   burstItemsLeft = 0;
   burstItemT = 0;
@@ -3542,12 +3650,21 @@ function startCountdown(){
   attractMode = false;
   inRunSetupFlow = false; // run is committed now — selectedCarEra/selectedStageEra/player.carIdx are locked in
   BIOMES = BIOME_SETS[selectedStageEra] || DEFAULT_BIOMES; // attract mode may have left a different stage's palette active
+  setEngineSoundProfile(selectedCarEra); // one data string per car/era class; currently all ten are identical
+
   state = 'countdown';
   countdownT = 0;
   countdownStep = 0;
   setEngineSound(false);
   bgMusic.pause(); // hold the music off during the countdown; resumes right on GO
   setEraMusic(selectedCarEra); // swap to this car's period track so it's cued up and ready for GO
+  // Start the media element from the player's tap while user activation is still valid.
+  // Keep it silent during the countdown, then restore the normal music level on GO.
+  if(!musicMuted){
+    bgMusic.volume = 0;
+    const musicPrimed = bgMusic.play();
+    if(musicPrimed && musicPrimed.catch) musicPrimed.catch(()=>{});
+  }
   playGoSound();
   requestFullscreenIfNeeded();
   document.getElementById('startWrap').classList.add('hidden');
@@ -3810,7 +3927,58 @@ canvas.addEventListener('pointerdown', handleStartTap);
    fight that deliberate countdown silence. */
 const bgMusic = document.getElementById('bgMusic');
 const BASE_MUSIC_VOLUME = 0.7;
-bgMusic.volume = BASE_MUSIC_VOLUME;
+
+/* service-menu audio mixer. Values are 0..1 and persist locally. */
+const AUDIO_LEVEL_KEY = 'grandRally63AudioLevels';
+let audioLevels = { music:1, cars:1, other:1, player:0.75, master:1 };
+try{
+  const saved = JSON.parse(localStorage.getItem(AUDIO_LEVEL_KEY) || 'null');
+  if(saved && typeof saved === 'object'){
+    for(const k of Object.keys(audioLevels)){
+      const n = Number(saved[k]);
+      if(Number.isFinite(n)) audioLevels[k] = Math.max(0, Math.min(1, n));
+    }
+  }
+}catch(e){}
+function saveAudioLevels(){ try{ localStorage.setItem(AUDIO_LEVEL_KEY, JSON.stringify(audioLevels)); }catch(e){} }
+
+// Cached mixer gains. These are recalculated only when a level actually changes,
+// never during the game loop or while individual sounds are playing.
+let audioMix = { music:0.7, cars:1, other:1, player:1 };
+function refreshAudioMix(){
+  const master = Math.max(0, Math.min(1, audioLevels.master));
+  audioMix.music = Math.max(0, Math.min(1, audioLevels.music * master));
+  audioMix.cars = Math.max(0, Math.min(1, audioLevels.cars * master));
+  audioMix.other = Math.max(0, Math.min(1, audioLevels.other * master));
+  audioMix.player = Math.max(0, Math.min(1, audioLevels.player * master));
+}
+refreshAudioMix();
+function musicLevelTarget(v){ return Math.max(0, Math.min(1, v * audioMix.music)); }
+function applyMusicLevel(){
+  if(typeof bgMusic!=='undefined') bgMusic.volume = musicLevelTarget(activeDucks.size ? Math.min(...activeDucks.values()) : BASE_MUSIC_VOLUME);
+}
+function applySfxLevels(){
+  const other = Math.max(0, Math.min(1, audioLevels.other * audioLevels.master));
+  const cars = Math.max(0, Math.min(1, audioLevels.cars * audioLevels.master));
+  const player = Math.max(0, Math.min(1, audioLevels.player * audioLevels.master));
+  if(typeof carSound!=='undefined') carSound.volume = cars;
+  for(const id of ['goSound','lowFuelSound','thunderSound','checkpointSound','pitstopSound','windSound','winnerSound','pickupSound1','pickupSound2','pickupSound3','impactSound1','impactSound2','impactSound3','crashSound']){
+    const el=document.getElementById(id); if(el) el.dataset.audioBaseVolume = el.dataset.audioBaseVolume || String(el.volume || 1);
+    if(el && id!=='windSound' && id!=='lowFuelSound') el.volume = Math.max(0, Math.min(1, Number(el.dataset.audioBaseVolume)||1)) * other;
+  }
+  if(typeof lowFuelSound!=='undefined' && lowFuelSound){ lowFuelSound.dataset.audioBaseVolume = lowFuelSound.dataset.audioBaseVolume || String(LOW_FUEL_VOLUME); }
+  // Short ramp rather than a direct .value snap — same click-avoidance reasoning as
+  // the per-frame frequency fix above, just for the (rarer) case of the player
+  // dragging the volume slider while the engine is running.
+  if(typeof engineMaster!=='undefined' && engineMaster) engineMaster.gain.setTargetAtTime(0.55 * player, engineAudioCtx.currentTime, 0.05);
+}
+function refreshAudioLevelsUI(){
+  const map=[['Music','music'],['Cars','cars'],['Other','other'],['Player','player'],['Master','master']];
+  for(const [id,key] of map){ const slider=document.getElementById('audio'+id+'Slider'); const value=document.getElementById('audio'+id+'Value'); if(slider) slider.value=Math.round(audioLevels[key]*100); if(value) value.textContent=Math.round(audioLevels[key]*100)+'%'; }
+}
+
+bgMusic.volume = musicLevelTarget(BASE_MUSIC_VOLUME);
+refreshAudioLevelsUI();
 
 /* ducking: fades bgMusic down while a checkpoint/pitstop stinger plays, then
    fades it back up once all currently-playing stingers have finished. Each
@@ -3818,7 +3986,6 @@ bgMusic.volume = BASE_MUSIC_VOLUME;
    levels); activeDucks tracks them all by id so if two stingers overlap, the
    lower (more-ducked) volume wins until both have finished. */
 const CHECKPOINT_DUCK_VOLUME = BASE_MUSIC_VOLUME*0.4;
-const PITSTOP_DUCK_VOLUME = BASE_MUSIC_VOLUME*0.2;
 const activeDucks = new Map(); // id -> target volume
 let duckIdCounter = 0;
 let musicFadeRAF = null;
@@ -3828,7 +3995,7 @@ function fadeMusicTo(target, duration){
   const startTime = performance.now();
   (function step(){
     const t = Math.min(1, (performance.now()-startTime)/duration);
-    bgMusic.volume = start + (target-start)*t;
+    bgMusic.volume = start + (musicLevelTarget(target)-start)*t;
     if(t<1) musicFadeRAF = requestAnimationFrame(step);
     else musicFadeRAF = null;
   })();
@@ -3936,6 +4103,7 @@ function tryPlayMusic(){
 }
 function stopAllSfx(){
   if(typeof carSound!=='undefined'){ carSound.pause(); carSound.currentTime=0; }
+  pauseProceduralEngine();
   if(typeof windSound!=='undefined'){ windSound.pause(); windSound.currentTime=0; windSound.volume=0; }
   if(typeof lowFuelSound!=='undefined'){ lowFuelSound.pause(); lowFuelSound.currentTime=0; lowFuelSound.volume=LOW_FUEL_VOLUME; lowFuelFading=false; lowFuelFadeT=0; }
   if(typeof goSound!=='undefined'){ goSound.pause(); goSound.currentTime=0; }
@@ -4018,7 +4186,7 @@ function fadeWindTo(target, duration, onDone){
 }
 function windLoopStep(){
   if(!windLoopActive) return;
-  fadeWindTo(1, rand(2,3)*1000, ()=>{
+  fadeWindTo(audioMix.other, rand(2,3)*1000, ()=>{
     if(!windLoopActive) return;
     windLoopTimeout = setTimeout(()=>{
       if(!windLoopActive) return;
@@ -4047,21 +4215,416 @@ function updateWindSound(){
   if(weather==='snow') startWindLoop(); else stopWindLoop();
 }
 
+
+/* ---------------- procedural engine sound ----------------
+   Each car/era class gets its own plain-text settings string. The parser below
+   deliberately keeps the data format human-readable so individual eras can be
+   tuned later without changing the engine code.
+
+   "Release smoothing" (added below, alongside the original "Smoothing") is a
+   SEPARATE, much shorter time constant used only while the engine's pitch is
+   falling (coasting off, braking) — see updateProceduralEngine(). "Smoothing"
+   still governs how eagerly the note climbs when accelerating.
+*/
+const DEFAULT_ENGINE_SOUND_DATA = `GRAND RALLY 63 PROCEDURAL ENGINE SETTINGS
+==========================================
+Speed range: 0 - 300 mph
+Idle frequency: 16 Hz
+Maximum frequency: 380 Hz
+Left pan: -0.77
+Right pan: 0.70
+Stereo detune: 32 cents
+Oscillator volume: 80%
+Reverb amount: 0%
+Reverb time: 0.1 seconds
+Smoothing: 0.99
+Release smoothing: 0.12 seconds
+Pitch variation: 35%
+Variation speed: 28.0 Hz
+Waveform: sawtooth
+Frequency curve: idle + (max - idle) * (speed / 300)^0.89`;
+
+// Builds one era's settings string by taking the template above and swapping in
+// just the labelled lines given in `overrides` — keeps every profile in the same
+// human-readable, individually-tunable format without hand-copying the whole block
+// ten times (and risking a typo in the 90% that's shared).
+function engineDataFrom(overrides){
+  let s = DEFAULT_ENGINE_SOUND_DATA;
+  for(const label in overrides){
+    const re = new RegExp('^(' + label.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ':\\s*).+$', 'mi');
+    s = s.replace(re, '$1'+overrides[label]);
+  }
+  return s;
+}
+
+// One profile per car/era class (order matches the car-select list: 0=1963 Formula,
+// 1=1983 Group C, 2=1990 Japan Domestic, 3=1930 1000 Mile, 4=2037 Concept Class,
+// 5=3027 Wiped Out, 6=2000 Super Karts, 7=2026 Sidecar, 8=1955 Le Mans Prototype,
+// 9=1986 Group B Rally). Every profile explicitly sets BOTH "Idle frequency" and
+// "Variation speed" so the wobble LFO always stays below that era's own idle note
+// (a faster LFO than the carrier reads as inherent flutter/crackle — see the
+// engine-sound bug report). These are a reasonable first pass per era's character;
+// tweak any line below to retune just that car.
+const ENGINE_SOUND_DATA = [
+  // 0: 1963 Formula — classic naturally-aspirated race engine, bright and high-revving
+  engineDataFrom({'Idle frequency':'55 Hz', 'Maximum frequency':'340 Hz', 'Variation speed':'22.0 Hz'}),
+  // 1: 1983 Group C — turbocharged endurance prototype, deep and powerful
+  engineDataFrom({'Idle frequency':'40 Hz', 'Maximum frequency':'260 Hz', 'Variation speed':'18.0 Hz'}),
+  // 2: 1990 Japan Domestic — revvy turbo touge car
+  engineDataFrom({'Idle frequency':'60 Hz', 'Maximum frequency':'360 Hz', 'Variation speed':'24.0 Hz'}),
+  // 3: 1930 1000 Mile — vintage, low-revving, lazy throttle response (bigger flywheel feel)
+  engineDataFrom({'Idle frequency':'18 Hz', 'Maximum frequency':'150 Hz', 'Variation speed':'8.0 Hz', 'Smoothing':'1.3', 'Release smoothing':'0.2 seconds'}),
+  // 4: 2037 Concept Class — futuristic, smoother/less buzzy whine
+  engineDataFrom({'Idle frequency':'90 Hz', 'Maximum frequency':'480 Hz', 'Variation speed':'20.0 Hz', 'Pitch variation':'15%', 'Waveform':'triangle'}),
+  // 5: 3027 Wiped Out — gritty wasteland buggy, rough and unstable
+  engineDataFrom({'Idle frequency':'25 Hz', 'Maximum frequency':'190 Hz', 'Variation speed':'9.0 Hz', 'Pitch variation':'55%', 'Release smoothing':'0.16 seconds'}),
+  // 6: 2000 Super Karts — small 2-stroke, buzzy and high-pitched, very snappy throttle
+  engineDataFrom({'Idle frequency':'95 Hz', 'Maximum frequency':'560 Hz', 'Variation speed':'35.0 Hz', 'Pitch variation':'50%', 'Waveform':'square', 'Smoothing':'0.4', 'Release smoothing':'0.06 seconds'}),
+  // 7: 2026 Sidecar — reuses Group C's profile, same as it reuses Group C's music track
+  engineDataFrom({'Idle frequency':'40 Hz', 'Maximum frequency':'260 Hz', 'Variation speed':'18.0 Hz'}),
+  // 8: 1955 Le Mans Prototype — classic sports-prototype growl
+  engineDataFrom({'Idle frequency':'32 Hz', 'Maximum frequency':'230 Hz', 'Variation speed':'14.0 Hz'}),
+  // 9: 1986 Group B Rally — turbocharged rally monster, aggressive flutter
+  engineDataFrom({'Idle frequency':'45 Hz', 'Maximum frequency':'310 Hz', 'Variation speed':'20.0 Hz', 'Pitch variation':'50%'})
+];
+
+function parseEngineSoundData(data){
+  const get = (label, fallback) => {
+    const re = new RegExp('^' + label.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ':\\s*(.+)$', 'mi');
+    const m = data.match(re);
+    return m ? m[1].trim() : fallback;
+  };
+  const num = (label, fallback) => {
+    const n = parseFloat(get(label, String(fallback)));
+    return Number.isFinite(n) ? n : fallback;
+  };
+  return {
+    speedMin: num('Speed range', 0),
+    speedMax: 300,
+    idleHz: num('Idle frequency', 20),
+    maxHz: num('Maximum frequency', 81),
+    leftPan: num('Left pan', -0.7),
+    rightPan: num('Right pan', 0.62),
+    detuneCents: num('Stereo detune', 40),
+    volume: num('Oscillator volume', 48) / 100,
+    reverbAmount: num('Reverb amount', 32) / 100,
+    reverbTime: num('Reverb time', 3.5),
+    smoothing: num('Smoothing', 0.15),
+    releaseSmoothing: num('Release smoothing', 0.12),
+    variation: num('Pitch variation', 43) / 100,
+    variationSpeed: num('Variation speed', 12),
+    waveform: get('Waveform', 'sawtooth').toLowerCase(),
+    frequencyCurve: get('Frequency curve', 'idle + (max - idle) * (speed / 300)^0.72'),
+    frequencyCurveExponent: (() => { const m = get('Frequency curve', '').match(/\^\s*([0-9.]+)/); const n = m ? parseFloat(m[1]) : 0.72; return Number.isFinite(n) ? n : 0.72; })()
+  };
+}
+
+const ENGINE_SOUND_PROFILES = ENGINE_SOUND_DATA.map(parseEngineSoundData);
+let activeEngineProfile = ENGINE_SOUND_PROFILES[0];
+
+function setEngineSoundProfile(classIndex){
+  const i = Math.max(0, Math.min(ENGINE_SOUND_PROFILES.length-1, classIndex|0));
+  activeEngineProfile = ENGINE_SOUND_PROFILES[i] || ENGINE_SOUND_PROFILES[0];
+  // Pan/gain/reverb-mix/waveform are no longer re-applied every frame (see
+  // updateProceduralEngine) — re-push them here so switching car/era still takes
+  // effect immediately rather than only at the next engine (re)start.
+  applyEngineStaticParams();
+}
+
 /* engine sound: loops only while a run (real or attract-demo) is actively
    playing, layered on top of the music. setEngineSound() below turns it
    on/off at each game-state transition. */
-const carSound = document.getElementById('carSound');
-carSound.volume = 1;
+const carSound = document.getElementById('carSound'); // retained as a legacy DOM asset; procedural engine replaces its playback
+carSound.volume = audioMix.cars;
+
 let engineShouldPlay = false;
-function tryPlayEngine(){
-  if(sfxMuted || !engineShouldPlay || !carSound.paused) return;
-  const p = carSound.play();
-  if(p && p.catch) p.catch(()=>{ /* still blocked; will retry on next gesture */ });
+let engineAudioCtx = null;
+let engineMaster = null;
+let engineDry = null;
+let engineWet = null;
+let engineConvolver = null;
+let engineLeftOsc = null;
+let engineRightOsc = null;
+let engineLeftGain = null;
+let engineRightGain = null;
+let engineLeftPan = null;
+let engineRightPan = null;
+let engineLastTime = 0;
+let engineLoopActive = false;
+let engineLeftPhase = 0;
+let engineRightPhase = 1.73;
+let engineVariationPhase = 0.41;
+
+function makeEngineImpulse(seconds){
+  const rate = engineAudioCtx.sampleRate;
+  const length = Math.max(1, Math.floor(rate * seconds));
+  const impulse = engineAudioCtx.createBuffer(2, length, rate);
+  for(let ch=0; ch<2; ch++){
+    const data = impulse.getChannelData(ch);
+    for(let i=0; i<length; i++){
+      const decay = Math.pow(1-i/length, 2.4);
+      data[i] = (Math.random()*2-1)*decay;
+    }
+  }
+  return impulse;
 }
+
+// Valid OscillatorType values only — anything else in the settings data (typos,
+// blank field, etc.) falls back to sawtooth rather than silently handing the
+// Web Audio API a bad value.
+const VALID_OSC_TYPES = ['sine','square','sawtooth','triangle'];
+function resolveOscType(waveform){
+  return VALID_OSC_TYPES.includes(waveform) ? waveform : 'sawtooth';
+}
+
+// Pan/gain/wet-dry mix and oscillator waveform are per-profile but effectively
+// STATIC for the whole time that profile is active — they used to be rewritten
+// unconditionally every single animation frame inside updateProceduralEngine()
+// (60+ redundant AudioParam writes/sec that did nothing but add more chances to
+// glitch). Now applied once here: on first setup, and again only when the
+// profile actually changes (setEngineSoundProfile). A short setTargetAtTime
+// ramp is used rather than a direct .value snap so a mid-race profile switch
+// (if that's ever wired up) can't itself produce a click.
+function applyEngineStaticParams(){
+  if(!engineAudioCtx) return;
+  const p = activeEngineProfile;
+  const now = engineAudioCtx.currentTime;
+  const RAMP_T = 0.03;
+  engineLeftOsc.type = resolveOscType(p.waveform);
+  engineRightOsc.type = resolveOscType(p.waveform);
+  engineLeftPan.pan.setTargetAtTime(Math.max(-1,Math.min(1,p.leftPan)), now, RAMP_T);
+  engineRightPan.pan.setTargetAtTime(Math.max(-1,Math.min(1,p.rightPan)), now, RAMP_T);
+  engineDry.gain.setTargetAtTime(Math.max(0,Math.min(1,1-p.reverbAmount)), now, RAMP_T);
+  engineWet.gain.setTargetAtTime(Math.max(0,Math.min(1,p.reverbAmount)), now, RAMP_T);
+  // Gain is NOT set here — see fadeInEngineGain() below. It needs a different ramp
+  // length depending on WHY the engine is (re)starting (a brand-new run vs coming
+  // back from a mute toggle), so it's driven from tryPlayEngine() instead of being
+  // tied to every profile reapplication.
+}
+
+// Ramps the engine's gain from wherever it currently sits up to the active profile's
+// target volume, over durationSec. Used for two different situations with two
+// different feels:
+//  - a genuine engine start (the 3-2-1-GO transition, or the attract-mode demo
+//    kicking off) uses a slow ~1s fade so the engine doesn't snap in from silence
+//  - coming back from the mute button mid-run uses a short, near-instant ramp so
+//    toggling sound back on actually feels like "back on", not a slow fade-up
+// Either way it's a proper linearRampToValueAtTime from the CURRENT value, never a
+// direct .value snap, so it can't itself introduce a click.
+function fadeInEngineGain(durationSec){
+  if(!engineAudioCtx) return;
+  const p = activeEngineProfile;
+  const now = engineAudioCtx.currentTime;
+  const target = Math.max(0,Math.min(1,p.volume));
+  const dur = Math.max(0.001, Number(durationSec) || 0.05);
+  const curL = engineLeftGain.gain.value;
+  const curR = engineRightGain.gain.value;
+  engineLeftGain.gain.cancelScheduledValues(now);
+  engineRightGain.gain.cancelScheduledValues(now);
+  engineLeftGain.gain.setValueAtTime(curL, now);
+  engineRightGain.gain.setValueAtTime(curR, now);
+  engineLeftGain.gain.linearRampToValueAtTime(target, now + dur);
+  engineRightGain.gain.linearRampToValueAtTime(target, now + dur);
+}
+
+function ensureEngineAudio(){
+  if(engineAudioCtx) return;
+  engineAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+  engineMaster = engineAudioCtx.createGain();
+  engineMaster.gain.value = 0.55 * audioMix.player;
+
+  engineDry = engineAudioCtx.createGain();
+  engineWet = engineAudioCtx.createGain();
+  engineConvolver = engineAudioCtx.createConvolver();
+
+  engineLeftOsc = engineAudioCtx.createOscillator();
+  engineRightOsc = engineAudioCtx.createOscillator();
+  engineLeftGain = engineAudioCtx.createGain();
+  engineRightGain = engineAudioCtx.createGain();
+  engineLeftPan = engineAudioCtx.createStereoPanner();
+  engineRightPan = engineAudioCtx.createStereoPanner();
+
+  engineLeftOsc.connect(engineLeftGain).connect(engineLeftPan);
+  engineRightOsc.connect(engineRightGain).connect(engineRightPan);
+
+  engineLeftPan.connect(engineDry);
+  engineRightPan.connect(engineDry);
+  engineLeftPan.connect(engineConvolver);
+  engineRightPan.connect(engineConvolver);
+
+  engineDry.connect(engineMaster);
+  engineConvolver.connect(engineWet).connect(engineMaster);
+  engineMaster.connect(engineAudioCtx.destination);
+
+  engineLeftGain.gain.value = 0;
+  engineRightGain.gain.value = 0;
+  engineDry.gain.value = 1;
+  engineWet.gain.value = 0;
+  engineLeftOsc.frequency.value = activeEngineProfile.idleHz;
+  engineRightOsc.frequency.value = activeEngineProfile.idleHz *
+    Math.pow(2, activeEngineProfile.detuneCents/1200);
+
+  applyEngineStaticParams();
+
+  engineLeftOsc.start();
+  engineRightOsc.start();
+}
+
+function updateEngineImpulse(){
+  if(!engineAudioCtx || !engineConvolver) return;
+  engineConvolver.buffer = makeEngineImpulse(Math.max(0.1, activeEngineProfile.reverbTime));
+}
+
+// How far into the future each frame's frequency ramp is aimed. This is the actual
+// pop fix: writing frequency.setValueAtTime(value, now) from a requestAnimationFrame
+// callback schedules the change at a timestamp that, by the time it reaches the
+// audio render thread, is already slightly in the PAST (main thread and audio
+// thread are separate clocks with a hop between them). Browsers resolve a
+// past-dated automation event by snapping the parameter immediately — a genuine
+// sample-domain discontinuity, i.e. a click — and that was happening on every
+// oscillator on every single frame, which is why it popped "randomly": it's a
+// timing race, not a steady defect, so how often it's actually audible depends on
+// exactly when each frame's message lands relative to the audio thread's render
+// block. Ramping to a point comfortably ahead of "now" instead gives the message
+// a safety margin to arrive before it's due, so there's nothing to snap.
+const ENGINE_FREQ_RAMP_LOOKAHEAD = 0.08; // seconds
+
+function updateProceduralEngine(){
+  if(!engineAudioCtx || !engineLeftOsc || !engineShouldPlay || sfxMuted) return;
+
+  const p = activeEngineProfile;
+  const now = engineAudioCtx.currentTime;
+  const dt = engineLastTime ? Math.min(0.05, Math.max(0.001, now-engineLastTime)) : 0.016;
+  engineLastTime = now;
+
+  // currentEffSpeed is INTERNAL game speed. Convert it to the displayed
+  // 0-300 speedometer value before applying the engine profile.
+  const internalSpeed = Math.max(0, Number(currentEffSpeed) || 0);
+  const displayedSpeed = Math.max(
+    p.speedMin,
+    Math.min(p.speedMax, internalSpeed / SPEEDO_MAX_EFF_SPEED * 300)
+  );
+  const ratio = Math.max(0, Math.min(1, displayedSpeed / p.speedMax));
+  const exponent = Number(p.frequencyCurveExponent) || 0.72;
+  const base = p.idleHz + (p.maxHz-p.idleHz) * Math.pow(ratio, exponent);
+
+  // Pitch-wander LFO. Tapered down near idle: when the LFO's own rate (variationSpeed)
+  // is faster than the engine's idle frequency itself — the default profile runs a
+  // 28Hz wobble on a 16Hz idle tone — the wobble completes more than one full cycle
+  // within a single cycle of the note, which reads as an inherent flutter/crackle
+  // regardless of how it's scheduled. Easing the depth in from near-zero at idle up
+  // to full depth by mid-speed keeps that LFO from ever outrunning the note it's
+  // modulating, without changing the tuned variation amount at speed.
+  engineVariationPhase += dt * p.variationSpeed * Math.PI * 2;
+  const variationTaper = 0.25 + 0.75*ratio;
+  const variationL = Math.sin(engineVariationPhase + engineLeftPhase) * p.variation * 0.18 * variationTaper;
+  const variationR = Math.sin(engineVariationPhase + engineRightPhase) * p.variation * 0.18 * variationTaper;
+
+  const targetL = Math.max(0.01, base * (1 + variationL));
+  const targetR = Math.max(0.01, base * (1 + variationR)) *
+                  Math.pow(2, p.detuneCents/1200);
+
+  // Asymmetric smoothing: "Smoothing" (often tuned slow, e.g. 0.99s, for an organic
+  // rev-up) used to also govern how fast the pitch comes back DOWN — so braking hard
+  // to a dead stop still left the engine note audibly winding down for the better
+  // part of a second afterwards. The note now falls using the much shorter "Release
+  // smoothing" time constant whenever its target has dropped below its current value,
+  // and falls faster still while a brake button is actually held (real engine braking
+  // drops revs quickly under compression). Climbing still uses the original, slower
+  // "Smoothing" constant, so acceleration keeps its tuned feel — only the release
+  // changed.
+  const smoothing = Math.max(0.001, Number(p.smoothing) || 0.001);
+  const braking = brakeLeftHeld || brakeRightHeld;
+  const releaseSmoothing = Math.max(0.001, Number(p.releaseSmoothing) || 0.12);
+  const fallSmoothing = braking ? Math.min(releaseSmoothing, 0.05) : releaseSmoothing;
+  const alphaRise = 1 - Math.exp(-dt / smoothing);
+  const alphaFall = 1 - Math.exp(-dt / fallSmoothing);
+
+  const currentL = Math.max(0.01, Number(engineLeftOsc.frequency.value) || targetL);
+  const currentR = Math.max(0.01, Number(engineRightOsc.frequency.value) || targetR);
+  const alphaL = targetL < currentL ? alphaFall : alphaRise;
+  const alphaR = targetR < currentR ? alphaFall : alphaRise;
+  const nextL = Math.max(0.01, currentL + (targetL-currentL) * alphaL);
+  const nextR = Math.max(0.01, currentR + (targetR-currentR) * alphaR);
+
+  // THE FIX: anchor each ramp at the oscillator's own current value (so there's no
+  // jump at the start — cancelScheduledValues() + setValueAtTime(current, now) just
+  // re-states where it already is, which is a no-op even if "now" lands a hair late),
+  // then linearRampToValueAtTime() the real target to a timestamp safely ahead of
+  // "now". That endpoint is never in the past when it reaches the audio thread, so
+  // there's nothing for the browser to snap — the frequency glides continuously
+  // frame to frame instead of being teleported to a new value 60+ times a second.
+  const rampTo = now + ENGINE_FREQ_RAMP_LOOKAHEAD;
+  engineLeftOsc.frequency.cancelScheduledValues(now);
+  engineRightOsc.frequency.cancelScheduledValues(now);
+  engineLeftOsc.frequency.setValueAtTime(currentL, now);
+  engineRightOsc.frequency.setValueAtTime(currentR, now);
+  engineLeftOsc.frequency.linearRampToValueAtTime(nextL, rampTo);
+  engineRightOsc.frequency.linearRampToValueAtTime(nextR, rampTo);
+
+  // Pan/gain/wet-dry mix are per-profile but effectively static — they're applied
+  // once in applyEngineStaticParams() (on setup and on profile change) instead of
+  // being rewritten here every frame, which used to add six more redundant
+  // AudioParam writes per tick for values that almost never actually changed.
+
+  if(engineShouldPlay && !sfxMuted) requestAnimationFrame(updateProceduralEngine);
+  else engineLoopActive = false;
+}
+function tryPlayLegacyCarSound(){
+  if(!engineShouldPlay || !carSound.paused) return;
+  const p = carSound.play();
+  if(p && p.catch) p.catch(()=>{});
+}
+
+// fadeInSeconds: how long the gain takes to come up when the loop was NOT already
+// running (see fadeInEngineGain above) — omit for the short "unmute" ramp, or pass
+// an explicit duration (setEngineSound(on) passes 1 second for an actual engine start).
+async function tryPlayEngine(fadeInSeconds){
+  if(sfxMuted || !engineShouldPlay) return;
+  tryPlayLegacyCarSound();
+  ensureEngineAudio();
+  if(engineAudioCtx.state === 'suspended'){
+    try{ await engineAudioCtx.resume(); }catch(e){}
+  }
+  if(engineAudioCtx.state !== 'running') return;
+
+  if(!engineLoopActive){
+    engineLoopActive = true;
+    engineLastTime = engineAudioCtx.currentTime;
+    updateEngineImpulse();
+    fadeInEngineGain(fadeInSeconds); // was previously left at whatever pauseProceduralEngine()
+                                      // had ramped it down to — this is the actual restart-after-mute fix
+    updateProceduralEngine();
+  }
+}
+
+function pauseProceduralEngine(){
+  engineLoopActive = false;
+  if(!engineAudioCtx) return;
+  const now = engineAudioCtx.currentTime;
+  // Cancel any in-flight fadeInEngineGain() ramp first, so a quick mute right after
+  // unmuting (or right after a run starts) can't leave two competing automations
+  // fighting over the same AudioParam.
+  engineLeftGain.gain.cancelScheduledValues(now);
+  engineRightGain.gain.cancelScheduledValues(now);
+  engineLeftGain.gain.setValueAtTime(engineLeftGain.gain.value, now);
+  engineRightGain.gain.setValueAtTime(engineRightGain.gain.value, now);
+  engineLeftGain.gain.setTargetAtTime(0, now, 0.03);
+  engineRightGain.gain.setTargetAtTime(0, now, 0.03);
+}
+
 function setEngineSound(on){
   engineShouldPlay = on;
-  if(on){ tryPlayEngine(); }
-  else { carSound.pause(); carSound.currentTime = 0; }
+  if(on){
+    setEngineSoundProfile(selectedCarEra);
+    tryPlayLegacyCarSound();
+    tryPlayEngine(1); // real engine start (GO transition / attract demo) — fade gain up over 1s instead of snapping in
+  }else{
+    pauseProceduralEngine();
+    carSound.pause();
+    carSound.currentTime = 0;
+  }
 }
 
 /* low fuel warning sound: loops only while fuel is at/below 20% during an
@@ -4070,7 +4633,7 @@ function setEngineSound(on){
 const lowFuelSound = document.getElementById('lowFuelSound');
 const LOW_FUEL_VOLUME = 0.9;
 const LOW_FUEL_FADE_DUR = 1; // seconds the clip takes to fade out once low-fuel ends
-lowFuelSound.volume = LOW_FUEL_VOLUME;
+lowFuelSound.volume = LOW_FUEL_VOLUME * audioMix.other;
 let lowFuelShouldPlay = false;
 let lowFuelFading = false;
 let lowFuelFadeT = 0;
@@ -4103,9 +4666,12 @@ function updateLowFuelFade(dt){
     lowFuelSound.volume = LOW_FUEL_VOLUME;
     lowFuelFading = false;
   } else {
-    lowFuelSound.volume = LOW_FUEL_VOLUME * (lowFuelFadeT/LOW_FUEL_FADE_DUR);
+    lowFuelSound.volume = LOW_FUEL_VOLUME * audioMix.other * (lowFuelFadeT/LOW_FUEL_FADE_DUR);
   }
 }
+
+applySfxLevels();
+applyMusicLevel();
 
 function tryPlayAllAudio(){ if(!sfxMuted){ updateWindSound(); tryPlayEngine(); tryPlayLowFuelSound(); } tryPlayMusic(); }
 tryPlayAllAudio();
@@ -4141,7 +4707,7 @@ function playGoSound(){
    pattern as playGoSound(), plus ducking the music underneath them so they
    cut through clearly, then letting it fade back up once they finish. */
 const checkpointSound = document.getElementById('checkpointSound');
-checkpointSound.volume = 1;
+checkpointSound.volume = audioMix.other;
 function playCheckpointSound(){
   if(sfxMuted) return;
   checkpointSound.currentTime = 0;
@@ -4151,14 +4717,12 @@ function playCheckpointSound(){
   if(p && p.catch) p.catch(()=>{ unduckMusic(duckId); /* blocked until a user gesture unlocks it */ });
 }
 const pitstopSound = document.getElementById('pitstopSound');
-pitstopSound.volume = 1;
+pitstopSound.volume = audioMix.other;
 function playPitstopSound(){
   if(sfxMuted) return;
   pitstopSound.currentTime = 0;
-  const duckId = duckMusic(PITSTOP_DUCK_VOLUME);
-  pitstopSound.addEventListener('ended', ()=>unduckMusic(duckId), {once:true});
   const p = pitstopSound.play();
-  if(p && p.catch) p.catch(()=>{ unduckMusic(duckId); /* blocked until a user gesture unlocks it */ });
+  if(p && p.catch) p.catch(()=>{});
 }
 
 /* pickup stinger (repair/fuel/turbo) — one random sample plays per pickup, every time,
@@ -4177,6 +4741,7 @@ function playPickupSound(){
   const src = pickupSoundSources[randInt(0, pickupSoundSources.length-1)];
   const voice = src.cloneNode(true);
   voice.currentTime = 0;
+  voice.volume = audioMix.other;
   const entry = { el: voice, startedAt: performance.now() };
   const removeVoice = ()=>{
     const i = pickupVoices.indexOf(entry);
@@ -4208,6 +4773,7 @@ function playImpactSound(){
   const src = impactSoundSources[randInt(0, impactSoundSources.length-1)];
   const voice = src.cloneNode(true);
   voice.currentTime = 0;
+  voice.volume = audioMix.other;
   const entry = { el: voice, startedAt: performance.now() };
   const removeVoice = ()=>{
     const i = impactVoices.indexOf(entry);
@@ -4516,7 +5082,10 @@ function update(dt){
     if(countdownStep >= 4){
       state='playing';
       setEngineSound(true);
-      tryPlayMusic(); // music holds off during the countdown, then kicks in right on GO
+      if(!musicMuted){
+        applyMusicLevel();
+        tryPlayMusic();
+      }
       document.getElementById('countdownWrap').style.display='none';
     }
     // still scroll world subtly during countdown? keep static
@@ -4712,14 +5281,14 @@ function update(dt){
   // nothing weird happens if it ever resumed mid-timer) but never actually spawns one.
   if(spawnObstacleT<=0){
     if(gameMode!=='scenic') spawnObstacle();
-    spawnObstacleT = rand(1.6,2.6)*(baseSpeed/scrollSpeed)*DIFFICULTY[difficulty].obstacleIntervalMult*OBSTACLE_RATE_MULT;
+    spawnObstacleT = rand(1.6,2.6)*(baseSpeed/scrollSpeed)*DIFFICULTY[difficulty].obstacleIntervalMult*OBSTACLE_RATE_MULT/powerupRates.obstacles;
   }
 
   spawnAiT -= dt;
   if(spawnAiT<=0){ spawnAi(); spawnAiT = rand(5,8)*(baseSpeed/scrollSpeed); }
 
   spawnTurboT -= dt;
-  if(spawnTurboT<=0){ spawnTurbo(); spawnTurboT = rand(18,30)*(baseSpeed/scrollSpeed); }
+  if(spawnTurboT<=0){ spawnTurbo(); spawnTurboT = rand(18,30)*(baseSpeed/scrollSpeed)/powerupRates.turbo; }
 
   // fuel/repair arrive in sporadic bursts of 2-3, then a 6-12s quiet gap
   if(burstItemsLeft>0){
@@ -4731,11 +5300,12 @@ function update(dt){
       let effRepairChance = DIFFICULTY[difficulty].repairChance;
       if(health<=0) effRepairChance = Math.min(1, effRepairChance*3);
       else if(health<20) effRepairChance = Math.min(1, effRepairChance*2);
-      if(Math.random() < (1-effRepairChance)) spawnFuel();
-      else spawnRepair();
+      let burstType;
+      if(Math.random() < (1-effRepairChance)){ spawnFuel(); burstType='fuel'; }
+      else { spawnRepair(); burstType='repair'; }
       burstItemsLeft--;
-      burstItemT = rand(0.8,1.8);
-      if(burstItemsLeft<=0) burstGapT = rand(6,12);
+      burstItemT = rand(0.8,1.8)/powerupRates[burstType];
+      if(burstItemsLeft<=0) burstGapT = rand(6,12)/Math.max(powerupRates.fuel,powerupRates.repair);
     }
   } else {
     burstGapT -= dt;
