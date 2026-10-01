@@ -556,6 +556,7 @@
 <audio id="impactSound2" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/impact2.mp3" preload="auto" playsinline></audio>
 <audio id="impactSound3" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/impact3.mp3" preload="auto" playsinline></audio>
 <audio id="crashSound" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/crash1.mp3" preload="auto" playsinline></audio>
+<audio id="nitroSound" src="https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/nitro.mp3" preload="auto" playsinline></audio>
 <button id="btnClearHS" aria-label="Clear high scores"></button>
 <div id="musicBar">
   <button id="btnPrevSong" aria-label="Previous song">◀ PREV</button>
@@ -3962,7 +3963,7 @@ function applySfxLevels(){
   const cars = Math.max(0, Math.min(1, audioLevels.cars * audioLevels.master));
   const player = Math.max(0, Math.min(1, audioLevels.player * audioLevels.master));
   if(typeof carSound!=='undefined') carSound.volume = cars;
-  for(const id of ['goSound','lowFuelSound','thunderSound','checkpointSound','pitstopSound','windSound','winnerSound','pickupSound1','pickupSound2','pickupSound3','impactSound1','impactSound2','impactSound3','crashSound']){
+  for(const id of ['goSound','lowFuelSound','thunderSound','checkpointSound','pitstopSound','windSound','winnerSound','pickupSound1','pickupSound2','pickupSound3','impactSound1','impactSound2','impactSound3','crashSound','nitroSound']){
     const el=document.getElementById(id); if(el) el.dataset.audioBaseVolume = el.dataset.audioBaseVolume || String(el.volume || 1);
     if(el && id!=='windSound' && id!=='lowFuelSound') el.volume = Math.max(0, Math.min(1, Number(el.dataset.audioBaseVolume)||1)) * other;
   }
@@ -4716,6 +4717,16 @@ function playCheckpointSound(){
   const p = checkpointSound.play();
   if(p && p.catch) p.catch(()=>{ unduckMusic(duckId); /* blocked until a user gesture unlocks it */ });
 }
+const nitroSound = document.getElementById('nitroSound');
+nitroSound.volume = audioMix.other;
+function playNitroSound(){
+  if(sfxMuted) return;
+  nitroSound.currentTime = 0;
+  nitroSound.volume = audioMix.other;
+  const p = nitroSound.play();
+  if(p && p.catch) p.catch(()=>{});
+}
+
 const pitstopSound = document.getElementById('pitstopSound');
 pitstopSound.volume = audioMix.other;
 function playPitstopSound(){
@@ -4829,6 +4840,7 @@ function triggerTurbo(){
   // back to full. Firing from cold (turboT already at 0) just starts a fresh single stack.
   turboStacks = turboT>0 ? Math.min(TURBO_MAX_CHARGES, turboStacks+1) : 1;
   turboT = TURBO_DURATION; // (re)starts/extends the gauge at full
+  playNitroSound();
 }
 document.getElementById('btnTurboLeft').addEventListener('pointerdown', (e)=>{ e.preventDefault(); triggerTurbo(); });
 document.getElementById('btnTurboRight').addEventListener('pointerdown', (e)=>{ e.preventDefault(); triggerTurbo(); });
