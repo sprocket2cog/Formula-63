@@ -878,7 +878,6 @@
       <div class="audioLevelRow"><span class="audioLevelLabel">Player car <span class="audioLevelValue" id="audioPlayerValue">18%</span></span><input class="audioLevelSlider" id="audioPlayerSlider" type="range" min="0" max="100" step="1" value="18"></div>
       <div class="audioLevelRow"><span class="audioLevelLabel">Master volume <span class="audioLevelValue" id="audioMasterValue">100%</span></span><input class="audioLevelSlider" id="audioMasterSlider" type="range" min="0" max="100" step="1" value="100"></div>
       <button class="svcBtn" id="btnSvcMPlusMusic">MATURE SOUNDTRACK: OFF</button>
-      <button class="svcBtn" id="btnSvcAudioTest">AUDIO TEST</button>
       <button class="svcBtn exit" id="btnAudioLevelsExit">EXIT</button>
     </div>
   </div>
@@ -890,6 +889,7 @@
       <button class="svcBtn" id="btnPowerRepair">REPAIR <span class="powerupValue" id="powerRepairValue">100%</span></button>
       <button class="svcBtn" id="btnPowerTurbo">TURBO <span class="powerupValue" id="powerTurboValue">100%</span></button>
       <button class="svcBtn" id="btnPowerObstacles">OBSTACLES <span class="powerupValue" id="powerObstaclesValue">100%</span></button>
+      <button class="svcBtn" id="btnPowerStrobe">NIGHT STROBE <span class="powerupValue" id="powerStrobeValue">ON</span></button>
       <button class="svcBtn exit" id="btnPowerupExit">EXIT</button>
     </div>
   </div>
@@ -966,7 +966,7 @@ checkOrientation();
 // looks fine. Fixed by dropping the constant drift (falls straight down, no per-drop
 // diagonal to line up), widening the speed spread a lot more so drops desync quickly,
 // and a touch of per-frame wobble (not a fixed slope) so no two paths are identical.
-const RAIN_COUNT = 30, SNOW_COUNT = 72; // rain halved; snow cut 20% (both for frame-rate)
+const RAIN_COUNT = 60, SNOW_COUNT = 72; // rain halved; snow cut 20% (both for frame-rate)
 const RAIN_SPEED = 500; // two-thirds of the previous 750
 let rainDrops = [], snowFlakes = [];
 function initWeatherParticles(){
@@ -1453,7 +1453,7 @@ function drawWeatherAtmosphere(wx, nightX, mult){
     if(alpha>0.001){ ctx.fillStyle = 'rgba(8,10,20,'+alpha+')'; ctx.fillRect(0,0,W,H); }
     // 1x1 solid pixels instead of arcs — cheaper to draw (no path/circle math) and
     // matches the "1 pixel drips" look.
-    ctx.fillStyle = 'rgba(200,208,220,'+(0.8*mult)+')';
+    ctx.fillStyle = 'rgba(228,232,238,'+(0.8*mult)+')';
     for(const d of rainDrops){ ctx.fillRect(d.x, d.y, 2, 2); }
   } else if(wx==='snow'){
     ctx.fillStyle = 'rgba(10,12,24,'+(0.28*mult)+')';
@@ -2779,6 +2779,9 @@ try{
     }
   }
 }catch(e){}
+const NIGHT_STROBE_KEY = 'grandRally63NightStrobe';
+let nightStrobeOn = true;
+try{ nightStrobeOn = localStorage.getItem(NIGHT_STROBE_KEY) !== '0'; }catch(e){}
 function savePowerupRates(){ try{ localStorage.setItem(POWERUP_RATE_KEY, JSON.stringify(powerupRates)); }catch(e){} }
 function nextPowerupRate(v){
   const i = POWERUP_RATE_STEPS.indexOf(v);
@@ -3052,6 +3055,7 @@ function openAudioLevels(){
   document.getElementById('audioLevelsWrap').classList.remove('hidden');
 }
 function refreshPowerupMenuUI(){
+  document.getElementById('powerStrobeValue').textContent = nightStrobeOn ? 'ON' : 'OFF';
   for(const [key,id] of [['fuel','powerFuelValue'],['repair','powerRepairValue'],['turbo','powerTurboValue'],['obstacles','powerObstaclesValue']]){
     document.getElementById(id).textContent = Math.round(powerupRates[key]*100)+'%';
   }
@@ -3070,6 +3074,12 @@ for(const [id,key] of [['btnPowerFuel','fuel'],['btnPowerRepair','repair'],['btn
     refreshPowerupMenuUI();
   });
 }
+document.getElementById('btnPowerStrobe').addEventListener('pointerdown',(e)=>{
+  e.preventDefault(); e.stopPropagation();
+  nightStrobeOn = !nightStrobeOn;
+  try{ localStorage.setItem(NIGHT_STROBE_KEY, nightStrobeOn ? '1' : '0'); }catch(err){}
+  refreshPowerupMenuUI();
+});
 document.getElementById('btnPowerupExit').addEventListener('pointerdown',(e)=>{
   e.preventDefault(); e.stopPropagation();
   document.getElementById('powerupMenuWrap').classList.add('hidden');
@@ -3084,22 +3094,6 @@ for(const [id,key] of [['audioMusicSlider','music'],['audioCarsSlider','cars'],[
   });
 }
 document.getElementById('btnAudioLevelsExit').addEventListener('pointerdown',(e)=>{ e.preventDefault(); e.stopPropagation(); applyMusicLevel(); applySfxLevels(); document.getElementById('audioLevelsWrap').classList.add('hidden'); document.getElementById('serviceMenuWrap').classList.remove('hidden'); });
-// AUDIO TEST: plays one sample (susan.mp3, same GitHub base as every other sound) each tap,
-// at the "Other sounds" x Master level, so the mixer sliders above can be judged by ear.
-// Plays regardless of the MUSIC/SFX on-off toggle, since the point is to hear it.
-let audioTestEl = null;
-document.getElementById('btnSvcAudioTest').addEventListener('pointerdown',(e)=>{
-  e.preventDefault(); e.stopPropagation();
-  refreshAudioMix();
-  if(!audioTestEl){
-    audioTestEl = new Audio(githubAsset('susan.mp3'));
-    audioTestEl.preload = 'auto';
-  }
-  audioTestEl.volume = audioMix.other;
-  try{ audioTestEl.currentTime = 0; }catch(err){}
-  const p = audioTestEl.play();
-  if(p && p.catch) p.catch(()=>{ /* file missing or blocked — fail silently */ });
-});
 
 document.getElementById('btnSvcColorBar').addEventListener('pointerdown', (e)=>{
   e.preventDefault();
@@ -3215,6 +3209,8 @@ function resetDefaultSettings(){
   // cumulative time/game statistics. These are the defaults presented on a fresh install.
   audioLevels = { music:1, cars:0.38, other:0.58, pickups:0.24, impacts:0.32, player:0.18, master:1 };
   powerupRates = {fuel:1, repair:1, turbo:1, obstacles:1};
+  nightStrobeOn = true;
+  try{ localStorage.setItem(NIGHT_STROBE_KEY, '1'); }catch(e){}
   scanlineOn = false;
   scanlineTransparency = 25;
   scanlineWidthMult = 1;
@@ -3515,6 +3511,8 @@ const FLAG_SPECIALS = [
   {flag:'🏁', name:'AUTO / DEFAULT'},
   {flag:'🏳️', name:'WHITE FLAG'},
   {flag:'🏳️‍⚧️', name:'TRANSGENDER FLAG'},
+  {flag:'\u{1F3F4}\u200D\u2620\uFE0F', name:'PIRATE'},
+  {flag:'\u{1F38C}', name:'ASIAN TOUR'},
   {flag:'🏳️‍🌈', name:'RAINBOW FLAG'},
   {flag:'🏴', name:'BLACK FLAG'},
   {flag:'🚩', name:'RED FLAG'}
@@ -3693,7 +3691,7 @@ document.querySelectorAll('#lightTintList .tintBtn').forEach(btn=>{
 /* ---------------- underglow select (after headlight tint, or after conditions on a day run) ---------------- */
 let underglowPreviewEra = 0, underglowPreviewIdx = 0;
 function showUnderglowSelect(){
-  underglowPreviewEra = randInt(0, CAR_SHEET_FILES.length-1);
+  underglowPreviewEra = selectedCarEra; // the era was already chosen on CAR SELECT — random car from that era only
   underglowPreviewIdx = randInt(0, CAR_COLS*CAR_ROWS-1);
   document.getElementById('underglowWrap').classList.remove('hidden');
   renderUnderglowPreview();
@@ -3713,18 +3711,21 @@ function renderUnderglowPreview(){
   const pctx = canvas.getContext('2d');
   pctx.setTransform(dpr,0,0,dpr,0,0);
   pctx.clearRect(0,0,visW,visH);
-  const drawH = visH*0.66, drawW = drawH*(CELL_W/CELL_H);
-  const cx = visW/2, cy = visH*0.56;
-  // underglow first, car on top, matching how it layers in-game — skipped entirely
-  // when UNDERGLOW OFF is selected.
-  if(playerUnderglow!=='off'){
-    const spr = getUnderglowSprite(drawH*0.64, drawH, playerUnderglow);
+  const drawH = visH*0.5, drawW = drawH*(CELL_W/CELL_H);
+  const bnd = getSpriteOpaqueCentre(underglowPreviewEra, underglowPreviewIdx);
+  const cx = visW/2 - (bnd.x - CELL_W/2)*(drawW/CELL_W), cy = visH*0.52 - (bnd.y - CELL_H/2)*(drawH/CELL_H);
+  // same car-shaped outer halo the game uses (drawn behind the car, then again over it,
+  // exactly like drawPlayer()/render()) — skipped entirely when UNDERGLOW OFF is selected.
+  const halo = (playerUnderglow!=='off') ? getUnderglowPreviewHalo(underglowPreviewEra, underglowPreviewIdx, drawW, drawH, playerUnderglow) : null;
+  const drawHalo = ()=>{
+    if(!halo) return;
     pctx.save();
     pctx.translate(cx, cy);
-    pctx.globalCompositeOperation = (playerUnderglow==='black') ? 'source-over' : 'lighter';
-    pctx.drawImage(spr.canvas, -spr.originX, -spr.originY);
+    pctx.globalCompositeOperation = 'lighter';
+    pctx.drawImage(halo.canvas, -halo.originX, -halo.originY);
     pctx.restore();
-  }
+  };
+  drawHalo();
   const col = underglowPreviewIdx % CAR_COLS, row = (underglowPreviewIdx/CAR_COLS)|0;
   const sx = col*CELL_W, sy = row*CELL_H;
   const sheet = carsSheets[underglowPreviewEra];
@@ -3737,6 +3738,75 @@ function renderUnderglowPreview(){
     pctx.fillRect(-drawW/2, -drawH/2, drawW, drawH);
   }
   pctx.restore();
+  drawHalo();
+}
+// Preview-only copy of getUnderglowSilhouetteSprite() (same sprite-alpha -> tint -> blur ->
+// punch-out-the-car recipe) parameterised by era/car index so the select screen can show any
+// car, not just the one in `player`. The in-game function is untouched.
+// Centre of the sprite's actual visible (non-transparent) pixels within its cell, in source
+// pixels, so the preview can centre the real car rather than the padded cell.
+const spriteBoundsCache = {};
+function getSpriteOpaqueCentre(era, idx){
+  const sheet = carsSheets[era];
+  const fallback = {x:CELL_W/2, y:CELL_H/2};
+  if(!(sheet && sheet.loaded)) return fallback;
+  const key = era+'_'+idx;
+  if(spriteBoundsCache[key]) return spriteBoundsCache[key];
+  let res = fallback;
+  try{
+    const w = Math.ceil(CELL_W), h = Math.ceil(CELL_H);
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    const x = c.getContext('2d');
+    const col = idx % CAR_COLS, row = (idx/CAR_COLS)|0;
+    x.drawImage(sheet.img, col*CELL_W, row*CELL_H, CELL_W, CELL_H, 0, 0, w, h);
+    const d = x.getImageData(0,0,w,h).data;
+    let minX=w, minY=h, maxX=-1, maxY=-1;
+    for(let yy=0; yy<h; yy++){
+      for(let xx=0; xx<w; xx++){
+        if(d[(yy*w+xx)*4+3] > 16){
+          if(xx<minX) minX=xx; if(xx>maxX) maxX=xx;
+          if(yy<minY) minY=yy; if(yy>maxY) maxY=yy;
+        }
+      }
+    }
+    if(maxX>=minX && maxY>=minY) res = {x:(minX+maxX+1)/2*(CELL_W/w), y:(minY+maxY+1)/2*(CELL_H/h)};
+  }catch(e){ /* canvas not readable — keep cell centre */ }
+  spriteBoundsCache[key] = res;
+  return res;
+}
+const underglowPreviewHaloCache = {};
+function getUnderglowPreviewHalo(era, idx, carW, carH, colorKey){
+  const sheet = carsSheets[era];
+  if(!(sheet && sheet.loaded)) return null; // don't cache a fallback; onload repaints
+  const key = colorKey+'_'+Math.round(carW)+'_'+Math.round(carH)+'_'+idx+'_'+era;
+  let spr = underglowPreviewHaloCache[key];
+  if(spr) return spr;
+  const hex = UNDERGLOW_COLORS[colorKey] || UNDERGLOW_COLORS.blue;
+  const {r,g,b} = hexToRgb(hex);
+  const pad = 50;
+  const w = Math.ceil(carW + pad*2), h = Math.ceil(carH + pad*2);
+  const off = document.createElement('canvas');
+  off.width = w; off.height = h;
+  const octx = off.getContext('2d');
+  const col = idx % CAR_COLS, row = (idx/CAR_COLS)|0;
+  octx.drawImage(sheet.img, col*CELL_W, row*CELL_H, CELL_W, CELL_H, w/2-carW/2, h/2-carH/2, carW, carH);
+  octx.globalCompositeOperation = 'source-in';
+  octx.fillStyle = `rgba(${r},${g},${b},0.72)`;
+  octx.fillRect(0,0,w,h);
+  const halo = document.createElement('canvas');
+  halo.width = w; halo.height = h;
+  const hctx = halo.getContext('2d');
+  hctx.filter = 'blur(22px)';
+  hctx.globalAlpha = 0.95;
+  hctx.drawImage(off,0,0);
+  hctx.filter = 'none';
+  hctx.globalCompositeOperation = 'destination-out';
+  hctx.globalAlpha = 1;
+  hctx.drawImage(off,0,0);
+  spr = {canvas:halo, originX:w/2, originY:h/2};
+  underglowPreviewHaloCache[key] = spr;
+  return spr;
 }
 function updateUnderglowSelection(){
   document.querySelectorAll('.underglowBtn').forEach(btn=>{
@@ -3834,7 +3904,6 @@ function startCountdown(){
     if(musicPrimed && musicPrimed.catch) musicPrimed.catch(()=>{});
   }
   playGoSound();
-  requestFullscreenIfNeeded();
   document.getElementById('startWrap').classList.add('hidden');
 }
 
@@ -4208,7 +4277,7 @@ function unduckMusic(id){
 // one music track per era, index-aligned with BIOME_SETS/CAR_SHEET_FILES
 const ERA_MUSIC = [
   'https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/Racer.mp3',        // 0: 1963 Formula
-  'https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/1990.mp3',        // 1: 1983 Group C
+  'https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/likethecars.mp3',   // 1: 1983 Group C
   'https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/gnostic.mp3',      // 2: 1990 Japan Domestic
   'https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/1930.mp3',        // 3: 1930 1000 Mile
   'https://raw.githubusercontent.com/sprocket2cog/Formula-63/refs/heads/main/Ground%20effect%20.mp3', // 4: 2037 Concept Class
@@ -4989,6 +5058,22 @@ function requestFullscreenIfNeeded(){
   }catch(e){ /* ignore */ }
 }
 
+/* Fullscreen is now requested on the player's very first touch of the screen (the
+   attract screen / TAP TO START), not midway through the select menus. Many mobile
+   browsers only treat pointerup/touchend/click as a valid fullscreen gesture (not
+   pointerdown), so the first touch's release also tries it. Listeners remove
+   themselves once fullscreen is active, or after a few tries if it's blocked. */
+let fsGestureTries = 0;
+function fullscreenFirstGesture(){
+  if(document.fullscreenElement || document.webkitFullscreenElement){ removeFsGestureListeners(); return; }
+  requestFullscreenIfNeeded();
+  if(++fsGestureTries >= 4) removeFsGestureListeners();
+}
+function removeFsGestureListeners(){
+  ['pointerup','touchend','click'].forEach(t=>window.removeEventListener(t, fullscreenFirstGesture, true));
+}
+['pointerup','touchend','click'].forEach(t=>window.addEventListener(t, fullscreenFirstGesture, true));
+
 /* "3 2 1 GO" countdown sound — preloaded (see the <audio preload="auto"> tag)
    the whole time the start screen is showing, and fired once right as each
    countdown begins so it's instant with no load delay. */
@@ -5246,20 +5331,20 @@ function submitName(){
 function spawnObstacle(){
   const wy = scrollY + H*0.76 + 60;
   const spriteCol = Math.random()<0.5 ? runBarrierCol : runDrumCol;
-  objects.push({type:'obstacle', worldY:wy, relOffset:rand(-0.62,0.62), spriteCol, alive:true, size:rand(32.76,40.32)});
+  objects.push({type:'obstacle', born:elapsed, worldY:wy, relOffset:rand(-0.62,0.62), spriteCol, alive:true, size:rand(32.76,40.32)});
 }
 function spawnFuel(){
   const wy = scrollY + H*0.76 + 60;
-  objects.push({type:'fuel', worldY:wy, relOffset:rand(-0.6,0.6), alive:true, size:35.28, bob:rand(0,6.28)});
+  objects.push({type:'fuel', born:elapsed, worldY:wy, relOffset:rand(-0.6,0.6), alive:true, size:35.28, bob:rand(0,6.28)});
 }
 function spawnRepair(){
   const wy = scrollY + H*0.76 + 60;
   const spriteCol = Math.random()<0.5 ? OBJ_SPANNER_COL : OBJ_SCREWDRIVER_COL;
-  objects.push({type:'repair', worldY:wy, relOffset:rand(-0.6,0.6), alive:true, size:35.28, bob:rand(0,6.28), spriteCol});
+  objects.push({type:'repair', born:elapsed, worldY:wy, relOffset:rand(-0.6,0.6), alive:true, size:35.28, bob:rand(0,6.28), spriteCol});
 }
 function spawnTurbo(){
   const wy = scrollY + H*0.76 + 60;
-  objects.push({type:'turbo', worldY:wy, relOffset:rand(-0.6,0.6), alive:true, size:26, bob:rand(0,6.28)});
+  objects.push({type:'turbo', born:elapsed, worldY:wy, relOffset:rand(-0.6,0.6), alive:true, size:26, bob:rand(0,6.28)});
 }
 function spawnBrokenDown(){
   const wy = scrollY + H*0.76 + 60;
@@ -5338,12 +5423,12 @@ function spawnDuePitstopItems(){
       const slot = w.nextItemIdx%3;
       const type = slot===0 ? 'fuel' : (slot===1 ? 'repair' : 'turbo'); // ⛽🔧🏎️ repeating
       if(type==='turbo'){
-        objects.push({type, worldY:wy, relOffset:w.relOffset, alive:true, size:26, bob:rand(0,6.28)});
+        objects.push({type, born:elapsed, worldY:wy, relOffset:w.relOffset, alive:true, size:26, bob:rand(0,6.28)});
         w.nextItemIdx++;
         continue;
       }
       const spriteCol = type==='fuel' ? OBJ_GASCAN_COL : (Math.random()<0.5 ? OBJ_SPANNER_COL : OBJ_SCREWDRIVER_COL);
-      objects.push({type, worldY:wy, relOffset:w.relOffset, alive:true, size:35.28, bob:rand(0,6.28), spriteCol, pit:true});
+      objects.push({type, born:elapsed, worldY:wy, relOffset:w.relOffset, alive:true, size:35.28, bob:rand(0,6.28), spriteCol, pit:true});
       w.nextItemIdx++;
     }
   }
@@ -6270,13 +6355,52 @@ function drawCheckpointStripe(){
   // the stripe band itself, spanning the full road width, with the cached text on top
   ctx.fillStyle = 'rgba(30,220,110,0.5)';
   ctx.fillRect(ox-roadW/2, sy-BLOCK*0.9, roadW, BLOCK*1.8);
+  ctx.restore();
+}
+// The green CHECKPOINT text only (not the stripe band above) — drawn from render() after
+// the night/fog layers so it reads through them. Same position/size maths as the stripe.
+function drawCheckpointLabel(){
+  if(state!=='playing') return;
+  const playerScreenY = H*0.76;
+  const worldY = scrollY + checkpointT*scrollSpeed;
+  const sy = playerScreenY - (worldY - scrollY);
+  if(sy<-80 || sy>H+80) return;
+  const ox = roadCenterXAt(worldY);
+  const roadW = roadHalfWidthAt(worldY)*2;
   ensureCheckpointLabel();
   const clampW = roadW*0.92;
   const drawW = Math.min(checkpointLabelCanvas.width, clampW);
   const drawH = checkpointLabelCanvas.height * (drawW/checkpointLabelCanvas.width);
+  ctx.save();
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(checkpointLabelCanvas, ox-drawW/2, sy-drawH/2, drawW, drawH);
   ctx.restore();
+}
+// Simple solid 4x4 marker lights at the centre of every pickup/obstacle, night only, drawn
+// above the night layers. triple-flash pattern, timed from each item's own creation (born).
+function drawItemMarkerLights(){
+  if(!isNight || !nightStrobeOn) return;
+  const playerScreenY = H*0.76;
+  for(let i=0;i<objects.length;i++){
+    const o = objects[i];
+    const tp = o.type;
+    let color;
+    if(tp==='fuel') color = '#00ff00';
+    else if(tp==='turbo') color = '#00ffff';
+    else if(tp==='repair') color = '#0040ff';
+    else if(tp==='obstacle') color = '#ff0000';
+    else continue;
+    if(o.born===undefined) continue;
+    // 3 flashes (0.267s on, 0.200s off between), then 0.371s off; cycle = 1.772s, timed from creation
+    const fp = (elapsed-o.born)%1.772;
+    if(!(fp<0.267 || (fp>=0.467 && fp<0.734) || (fp>=0.934 && fp<1.201))) continue;
+    const sy = playerScreenY - (o.worldY - scrollY);
+    if(sy<-60 || sy>H+60) continue;
+    const ox = roadCenterXAt(o.worldY) + o.relOffset*roadHalfWidthAt(o.worldY);
+    const bob = tp==='obstacle' ? 0 : Math.sin(elapsed*3+o.bob)*3; // same bob the sprite uses
+    ctx.fillStyle = color;
+    ctx.fillRect(Math.round(ox)-2, Math.round(sy+bob)-2, 4, 4);
+  }
 }
 
 function drawPlayer(){
@@ -6348,6 +6472,8 @@ function render(){
   drawWeatherOverlay();
   // Restore road markings after the night atmosphere has darkened the scene.
   drawNightRoadMarkers();
+  drawCheckpointLabel();
+  drawItemMarkerLights();
   // Draw only the outer silhouette halo after the atmosphere. Because the halo has its
   // centre punched out, it surrounds the real car instead of colouring the car itself.
   const playerScreenY = H*0.76;
