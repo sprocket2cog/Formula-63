@@ -1,4 +1,19 @@
-<!-- IF IN DOUBT FAKE IT C=64 -->
+<!-- IF IN DOUBT FAKE IT C=64
+
+10 PRINT CHR$(147)
+20 X = 0 : P = 20 : W = 14
+30 GET A$ : IF A$="A" AND P > 1 THEN P = P - 1
+40 IF A$="D" AND P < 38 THEN P = P + 1
+50 L = 13 + INT(10 * SIN(X))
+60 R = L + W
+70 IF P <= L OR P >= R THEN GOTO 120
+80 PRINT TAB(L);"*";
+90 PRINT TAB(P);"^";
+100 PRINT TAB(R);"*"
+110 X = X + 0.15 : GOTO 30
+120 PRINT : PRINT " *** CRASH! GAME OVER ***"
+130 END
+-->
 <!DOCTYPE html>
 <html>
 <head>
@@ -440,6 +455,16 @@
     color:#fff;letter-spacing:0.06em;margin-top:0.2vmin;
     width:17vmin;max-width:95px;text-align:center;
   }
+  /* optional service/test FPS counter — deliberately outside the HUD so it sits
+     beneath the HUD at the top-right without changing the HUD layout itself */
+  #fpsCounter{
+    position:fixed;top:38vmin;right:2.4vmin;z-index:100000;pointer-events:none;
+    display:none;font-family:'Press Start 2P',monospace;font-size:clamp(0.52rem,2.4vw,0.8rem);
+    font-weight:bold;letter-spacing:0.04em;color:#3adb5c;
+    text-shadow:0 0 8px currentColor,2px 2px 0 var(--purple-dk);
+    white-space:nowrap;
+  }
+  #fpsCounter.show{display:block;}
 
   #countdownWrap{position:fixed;inset:0;z-index:40;display:none;align-items:center;justify-content:center;pointer-events:none;}
   #countdownText{font-size:14vmin;color:var(--yellow);text-shadow:0 0 20px rgba(255,214,10,0.8),4px 4px 0 var(--purple-dk);
@@ -592,6 +617,7 @@
     <div id="pitstopFlash">PITSTOP AHEAD</div>
     <div id="checkpointFlash">CHECKPOINT BONUS<div id="checkpointFlashSub">+100</div></div>
   </div>
+  <div id="fpsCounter" aria-hidden="true">FPS 60</div>
 
   <div id="countdownWrap"><div id="countdownText">3</div></div>
 
@@ -734,6 +760,8 @@
         <button class="eraBtn condBtn" data-weather="fog" data-night="0">FOG</button>
         <button class="eraBtn condBtn" data-weather="clear" data-night="1">NIGHT</button>
         <button class="eraBtn condBtn" data-weather="fog" data-night="1">NIGHT FOG</button>
+        <button class="eraBtn condBtn" data-weather="rain" data-night="1">NIGHT RAIN</button>
+        <button class="eraBtn condBtn" data-weather="snow" data-night="1">NIGHT SNOW</button>
       </div>
       <button id="btnRandomConditions" class="eraBtn" style="margin-top:1.8vmin;">RANDOM CONDITIONS</button>
     </div>
@@ -890,6 +918,7 @@
       <button class="svcBtn" id="btnPowerTurbo">TURBO <span class="powerupValue" id="powerTurboValue">100%</span></button>
       <button class="svcBtn" id="btnPowerObstacles">OBSTACLES <span class="powerupValue" id="powerObstaclesValue">100%</span></button>
       <button class="svcBtn" id="btnPowerStrobe">NIGHT STROBE <span class="powerupValue" id="powerStrobeValue">ON</span></button>
+      <button class="svcBtn" id="btnPowerFps">FPS: OFF</button>
       <button class="svcBtn exit" id="btnPowerupExit">EXIT</button>
     </div>
   </div>
@@ -966,14 +995,25 @@ checkOrientation();
 // looks fine. Fixed by dropping the constant drift (falls straight down, no per-drop
 // diagonal to line up), widening the speed spread a lot more so drops desync quickly,
 // and a touch of per-frame wobble (not a fixed slope) so no two paths are identical.
-const RAIN_COUNT = 60, SNOW_COUNT = 72; // rain halved; snow cut 20% (both for frame-rate)
-const RAIN_SPEED = 500; // two-thirds of the previous 750
+const RAIN_COUNT = 60, SNOW_COUNT = 84; // keep both particle systems lightweight
+const RAIN_SPEED = 500;
 let rainDrops = [], snowFlakes = [];
 function initWeatherParticles(){
   rainDrops = [];
-  for(let i=0;i<RAIN_COUNT;i++) rainDrops.push({x:rand(0,W), y:rand(0,H), speedMul:rand(0.5,1.8), wobblePhase:rand(0,6.28), wobbleFreq:rand(2,5)});
+  // Rain uses the same particle state model as snow, but its motion is deliberately
+  // constrained to the vertical axis. No horizontal Brownian drift for rain.
+  for(let i=0;i<RAIN_COUNT;i++) rainDrops.push({
+    x:rand(0,W), y:rand(0,H), phase:rand(0,6.28), speed:rand(280,620),
+    driftY:rand(-8,8), brownianT:rand(0,0.12)
+  });
   snowFlakes = [];
-  for(let i=0;i<SNOW_COUNT;i++) snowFlakes.push({x:rand(0,W), y:rand(0,H), phase:rand(0,6.28), speed:rand(50.6,118.1)});
+  snowSimAccum = 0;
+  // Snow gets a cheap Brownian drift. Horizontal movement is zero-mean, while
+  // vertical random walk is biased downward so flakes always trend earthward.
+  for(let i=0;i<SNOW_COUNT;i++) snowFlakes.push({
+    x:rand(0,W), y:rand(0,H), phase:rand(0,6.28), speed:rand(50.6,118.1),
+    driftX:rand(-10,10), driftY:rand(-4,8), brownianT:rand(0,0.12)
+  });
 }
 // Lightning: only during rain. A "strike" is 1-3 quick flashes; the dark rain overlay's
 // alpha gets suppressed toward 0 during a flash (so the world briefly reads full-bright,
@@ -983,22 +1023,63 @@ function initWeatherParticles(){
 let lightningNextT = rand(6,14), lightningFlashesLeft = 0, lightningFlashT = 0, lightningGapT = 0;
 let lightningAlpha = 0; // 0 = normal rain darkness, 1 = fully suppressed (flash)
 let thunderDelayT = -1; // countdown to playing thunder.mp3; -1 = none queued
+let snowSimAccum = 0;
+const SNOW_SIM_DT = 1/30; // snow simulation only; the main game/render loop remains uncapped
+
 function updateWeather(dt){
-  // particle motion — always ticks so drops/flakes don't jump on weather switch, but
-  // only drawn when the matching weather is active
-  for(const d of rainDrops){
-    d.y += RAIN_SPEED*d.speedMul*dt;
-    d.wobblePhase += d.wobbleFreq*dt;
-    d.x += Math.sin(d.wobblePhase)*4*dt; // tiny per-frame wobble, not a fixed slope — no two drops trace the same line
-    if(d.y > H+8){ d.y = -8; d.x = rand(0,W); }
-    if(d.x<-8) d.x = W+8; else if(d.x>W+8) d.x = -8;
-  }
-  for(const f of snowFlakes){
-    f.phase += dt*1.3;
-    f.x += Math.sin(f.phase)*14*dt;
-    f.y += f.speed*dt;
-    if(f.y > H+8){ f.y = -8; f.x = rand(0,W); }
-    if(f.x<-8) f.x = W+8; else if(f.x>W+8) f.x = -8;
+  // Particle motion — both weather systems use the same lightweight Brownian-style
+  // simulation. Rain simply removes the horizontal component and falls vertically.
+  // Only the active weather is drawn, but both systems keep ticking so a weather
+  // transition does not make particles jump.
+  snowSimAccum += dt;
+  if(snowSimAccum >= SNOW_SIM_DT){
+    const sdt = Math.min(snowSimAccum, 0.1);
+    snowSimAccum = 0;
+    for(const d of rainDrops){
+      d.brownianT -= sdt;
+      if(d.brownianT <= 0){
+        d.brownianT = rand(0.06,0.12);
+        // Rain gets only a tiny vertical random impulse. X never changes.
+        d.driftY += (Math.random()*2-0.7)*9;
+        d.driftY *= 0.78;
+        if(d.driftY < -18) d.driftY = -18; else if(d.driftY > 18) d.driftY = 18;
+      }
+      d.phase += sdt*0.8;
+      d.y += Math.max(d.speed*0.55, d.speed + d.driftY)*sdt;
+      if(d.y > H+8){
+        d.y = -8;
+        d.x = rand(0,W);
+        d.driftY = rand(-3,7);
+      }
+    }
+
+    // Snow simulation runs at 30 Hz. The game/render loop remains at full speed,
+  // so this only reduces the particle-state work, not the game's frame rate.
+    for(const f of snowFlakes){
+      // Brownian random walk is stepped less often to save per-frame CPU work.
+      f.brownianT -= sdt;
+      if(f.brownianT <= 0){
+        f.brownianT = rand(0.06,0.12);
+        // Zero-mean horizontal Brownian impulse.
+        f.driftX += (Math.random()*2-1)*18;
+        // Slight positive bias vertically: Brownian motion, but gravity wins.
+        f.driftY += (Math.random()*2-0.7)*9;
+        f.driftX *= 0.78;
+        f.driftY *= 0.78;
+        if(f.driftX < -35) f.driftX = -35; else if(f.driftX > 35) f.driftX = 35;
+        if(f.driftY < -18) f.driftY = -18; else if(f.driftY > 18) f.driftY = 18;
+      }
+      f.phase += sdt*0.8;
+      f.x += (f.driftX + Math.sin(f.phase)*3.5)*sdt;
+      f.y += Math.max(f.speed*0.55, f.speed + f.driftY)*sdt;
+      if(f.y > H+8){
+        f.y = -8;
+        f.x = rand(0,W);
+        f.driftX = rand(-8,8);
+        f.driftY = rand(-3,7);
+      }
+      if(f.x<-8) f.x = W+8; else if(f.x>W+8) f.x = -8;
+    }
   }
   if(weather!=='rain'){ lightningAlpha = 0; }
   else if(lightningFlashesLeft>0){
@@ -1451,49 +1532,28 @@ function drawWeatherAtmosphere(wx, nightX, mult){
   if(wx==='rain'){
     const alpha = 0.45*(1-lightningAlpha)*mult;
     if(alpha>0.001){ ctx.fillStyle = 'rgba(8,10,20,'+alpha+')'; ctx.fillRect(0,0,W,H); }
-    // 1x1 solid pixels instead of arcs — cheaper to draw (no path/circle math) and
-    // matches the "1 pixel drips" look.
-    ctx.fillStyle = 'rgba(228,232,238,'+(0.8*mult)+')';
-    for(const d of rainDrops){ ctx.fillRect(d.x, d.y, 2, 2); }
+    // Rain particles are rendered separately after the night gradient, just like snow.
   } else if(wx==='snow'){
     ctx.fillStyle = 'rgba(10,12,24,'+(0.28*mult)+')';
     ctx.fillRect(0,0,W,H);
-    // uniform 2x2 solid squares instead of arcs — cheaper to draw and matches the
-    // "2 pixel squares" look.
-    ctx.fillStyle = 'rgba(255,255,255,'+(0.85*mult)+')';
-    for(const f of snowFlakes){ ctx.fillRect(f.x, f.y, 4, 4); }
+    // Snow particles are deliberately drawn after the night mask so they remain
+    // bright foreground weather instead of being darkened by the night layer.
   }
-  // 4) night darken (both plain NIGHT and NIGHT FOG) is back to a radial gradient centred
-  // on the player — the linear band version didn't read as fog/darkness closing in around
-  // the car, it just looked like a dark strip up top. The frame-rate problem earlier turned
-  // out to be the shadowBlur'd spinning pickup text (now fixed), not this gradient, so a
-  // per-frame radial here is fine. Pulled the outer radius in tight so the dark now reaches
-  // much closer to the car (near the bumper) instead of fading out well before it.
-  // Day fog (wx==='fog' && !nightX) is untouched below and keeps its own reach.
+  // 4) night darken: restore the original live radial gradient so the clear/bright
+  // area follows the player's actual X position instead of staying pinned to screen
+  // centre. The pickup ctx.filter test showed the real FPS cliff was the per-pickup
+  // filter, so we can bring this visual behaviour back.
+  // Day fog (wx==='fog' && !nightX) remains unchanged below.
   const playerScreenY = H*0.76;
   if(nightX){
     const base = (wx==='fog') ? [0.55, 0.88, 0.99] : [0.54, 0.86, 0.97];
-    // Sizing this off H was the problem on a tall portrait screen — the fade ended up
-    // spanning way more physical distance than intended. Now sized off screen WIDTH:
-    // black starts almost immediately outside the car, and the entire grey-to-black fade
-    // spans about a third of the screen's width, not a big fraction of its height.
-    // A genuine flat grey circle right around the car (radius startR, no blending inside
-    // it at all — createRadialGradient clamps everything inside r0 to the first stop), then
-    // a smooth, gradually-spaced blend into black, then solid black for the rest of the
-    // screen beyond outerR — so most of the screen reads as black, not just a big soft grey
-    // wash. This is the "mainly black, small grey circle at the car" shape that was missing.
-    // Night fog pulls in noticeably closer than plain night — otherwise the two modes
-    // read almost identically since they only differed by alpha before.
     const startR = (wx==='fog') ? H*0.02 : H*0.04;
     const outerR = startR + ((wx==='fog') ? W*0.45 : W*0.75);
-    // Night fog now uses explicit fixed endpoints (grey (35,35,45,0.6) -> black
-    // (20,20,20,0.85)) instead of the derived base[]/alphaMult formula plain night still
-    // uses below.
     const grey = (wx==='fog') ? [35,35,45] : [10,10,12];
     const black = (wx==='fog') ? [10,10,10] : [8,9,11];
     const nearAlpha = (wx==='fog') ? 0.7 : null;
     const farAlpha = (wx==='fog') ? 0.98 : null;
-    const alphaMult = 1.08; // plain night only — fog uses nearAlpha/farAlpha directly
+    const alphaMult = 1.08;
     const mixColor = f => [0,1,2].map(i => Math.round(grey[i]+(black[i]-grey[i])*f));
     const stopAt = f => {
       const [r,g,b] = mixColor(f);
@@ -1520,6 +1580,19 @@ function drawWeatherAtmosphere(wx, nightX, mult){
     ctx.fillRect(0,0,W,H);
   }
 }
+function drawRainParticles(wx, mult){
+  if(mult<=0 || wx!=='rain') return;
+  // Brighter than the old rain and deliberately elongated so the drops read against
+  // the black night mask. This pass happens after drawWeatherAtmosphere(), so rain
+  // stays in the foreground and is never darkened by the night gradient.
+  ctx.fillStyle = 'rgba(139,171,202,'+(0.95*mult)+')'; // #7995a8 +15% R/G, +20% B
+  for(const d of rainDrops){ ctx.fillRect(d.x, d.y, 1, 3); }
+}
+function drawSnowParticles(wx, mult){
+  if(mult<=0 || wx!=='snow') return;
+  ctx.fillStyle = 'rgba(255,255,255,'+(0.85*mult)+')';
+  for(const f of snowFlakes){ ctx.fillRect(f.x, f.y, 2, 2); }
+}
 function drawWeatherOverlay(){
   const playerScreenY = H*0.76;
   // 1) the atmosphere layer (rain/snow darken+particles, night/fog darken) crossfades
@@ -1532,6 +1605,19 @@ function drawWeatherOverlay(){
     drawWeatherAtmosphere(weatherTransition.to.weather, weatherTransition.to.night, t);
   } else {
     drawWeatherAtmosphere(weather, isNight, 1);
+  }
+  // Rain and snow are foreground weather layers: draw them after the night mask so
+  // particles stay bright instead of being swallowed by the darkness.
+  if(weatherTransition){
+    const raw = clamp(weatherTransition.t/weatherTransition.dur, 0, 1);
+    const t = raw*raw*(3-2*raw);
+    drawRainParticles(weatherTransition.from.weather, 1-t);
+    drawRainParticles(weatherTransition.to.weather, t);
+    drawSnowParticles(weatherTransition.from.weather, 1-t);
+    drawSnowParticles(weatherTransition.to.weather, t);
+  } else {
+    drawRainParticles(weather, 1);
+    drawSnowParticles(weather, 1);
   }
   // 2) headlights/taillights for every car on screen, punching back through the dark.
   // The player's headlights are now their own pick every run (day or night, or LIGHTS
@@ -2894,6 +2980,8 @@ function refreshServiceMenuDisplay(){
   document.getElementById('btnSvcRollingCrt').textContent = 'ROLLING CRT: '+(rollingCrtOn?'ON':'OFF');
   // restored from localStorage on load, so the label must be synced from the real state
   document.getElementById('btnSvcMPlusMusic').textContent = 'MATURE SOUNDTRACK: '+(mPlusMusicUnlocked?'ON':'OFF');
+  document.getElementById('btnPowerFps').textContent = 'FPS: '+(fpsCounterOn?'ON':'OFF');
+  document.getElementById('fpsCounter').classList.toggle('show', fpsCounterOn);
 }
 function openServiceMenu(){
   refreshServiceMenuDisplay();
@@ -3059,6 +3147,11 @@ function refreshPowerupMenuUI(){
   for(const [key,id] of [['fuel','powerFuelValue'],['repair','powerRepairValue'],['turbo','powerTurboValue'],['obstacles','powerObstaclesValue']]){
     document.getElementById(id).textContent = Math.round(powerupRates[key]*100)+'%';
   }
+  const fpsBtn = document.getElementById('btnPowerFps');
+  const fpsEl = document.getElementById('fpsCounter');
+  fpsBtn.textContent = 'FPS: '+(fpsCounterOn ? 'ON' : 'OFF');
+  fpsBtn.setAttribute('aria-pressed', fpsCounterOn ? 'true' : 'false');
+  fpsEl.classList.toggle('show', fpsCounterOn);
 }
 function openPowerupMenu(){
   refreshPowerupMenuUI();
@@ -3078,6 +3171,14 @@ document.getElementById('btnPowerStrobe').addEventListener('pointerdown',(e)=>{
   e.preventDefault(); e.stopPropagation();
   nightStrobeOn = !nightStrobeOn;
   try{ localStorage.setItem(NIGHT_STROBE_KEY, nightStrobeOn ? '1' : '0'); }catch(err){}
+  refreshPowerupMenuUI();
+});
+document.getElementById('btnPowerFps').addEventListener('click',(e)=>{
+  e.preventDefault(); e.stopPropagation();
+  fpsCounterOn = !fpsCounterOn;
+  fpsFrameCount = 0;
+  fpsSampleT = 0;
+  try{ localStorage.setItem(SVC_FPS_KEY, fpsCounterOn ? '1' : '0'); }catch(err){}
   refreshPowerupMenuUI();
 });
 document.getElementById('btnPowerupExit').addEventListener('pointerdown',(e)=>{
@@ -3173,6 +3274,11 @@ const SVC_SCANLINE_ON_KEY = 'turboPursuitScanlineOn';
 const SVC_SCANLINE_ALPHA_KEY = 'turboPursuitScanlineTransparency'; // 25, 50, or 75
 const SVC_SCANLINE_WIDTH_KEY = 'turboPursuitScanlineWidth'; // 0.5, 1, 2, or 3 (multiplier on the base line thickness)
 const SVC_ROLLING_CRT_KEY = 'turboPursuitRollingCrt';
+const SVC_FPS_KEY = 'turboPursuitFpsCounter';
+let fpsCounterOn = false;
+try{ const savedFps = localStorage.getItem(SVC_FPS_KEY); if(savedFps===null){ localStorage.setItem(SVC_FPS_KEY, '0'); } fpsCounterOn = savedFps === '1'; }catch(e){}
+let fpsFrameCount = 0;
+let fpsSampleT = 0;
 function getTotalPlaySeconds(){
   try{ return (parseFloat(localStorage.getItem(SVC_TIME_KEY)) || 0) + svcPlaySecondsPending; }catch(e){ return svcPlaySecondsPending; }
 }
@@ -3215,6 +3321,9 @@ function resetDefaultSettings(){
   scanlineTransparency = 25;
   scanlineWidthMult = 1;
   rollingCrtOn = false;
+  fpsCounterOn = false;
+  fpsFrameCount = 0;
+  fpsSampleT = performance.now();
   mPlusMusicUnlocked = false;
   audioMode = 0;
   musicMuted = false;
@@ -3226,6 +3335,7 @@ function resetDefaultSettings(){
     localStorage.setItem(SVC_SCANLINE_ALPHA_KEY, '25');
     localStorage.setItem(SVC_SCANLINE_WIDTH_KEY, '1');
     localStorage.setItem(SVC_ROLLING_CRT_KEY, '0');
+    localStorage.setItem(SVC_FPS_KEY, '0');
     localStorage.setItem('turboPursuitMPlusMusicUnlocked', '0');
     localStorage.setItem('turboPursuitAudioMode', '0');
     localStorage.removeItem('turboPursuitMusicMuted');
@@ -6226,8 +6336,10 @@ function drawObjects(){
         }
         continue;
       }
-      const glowFilter = nightProximityFilter(sy);
-      if(glowFilter){ ctx.save(); ctx.filter = glowFilter; }
+      // TEMP TEST: disable the live night proximity filter for ordinary pickups.
+      // This intentionally leaves the sprites unfiltered so we can measure whether
+      // per-pickup ctx.filter is the FPS bottleneck. Pitstop pickups keep their
+      // existing additive brightness path above.
       if(o.type==='obstacle'){
         drawObjectSprite(o.spriteCol, ox, sy, o.size);
       } else if(o.type==='fuel'){
@@ -6237,7 +6349,6 @@ function drawObjects(){
         const bob = Math.sin(t*3+o.bob)*3;
         drawSpinPulseSprite(o.spriteCol, ox, sy+bob, o.size, t, o.bob);
       }
-      if(glowFilter) ctx.restore();
     } else if(o.type==='turbo'){
       const bob = Math.sin(t*3+o.bob)*3;
       drawSpinPulseEmoji('🏎️', ox, sy+bob, o.size, t, o.bob);
@@ -6465,7 +6576,6 @@ function render(){
   ctx.fillStyle = '#0a0414';
   ctx.fillRect(-20,-20,W+40,H+40);
   drawGround();
-  drawPitstopSigns();
   drawCheckpointStripe();
   drawObjects();
   drawPlayer();
@@ -6473,6 +6583,7 @@ function render(){
   // Restore road markings after the night atmosphere has darkened the scene.
   drawNightRoadMarkers();
   drawCheckpointLabel();
+  drawPitstopSigns(); // same layer as CHECKPOINT: above the night/fog gradient so it glows
   drawItemMarkerLights();
   // Draw only the outer silhouette halo after the atmosphere. Because the halo has its
   // centre punched out, it surrounds the real car instead of colouring the car itself.
@@ -6605,6 +6716,24 @@ function updateCountdownOverlay(){
   txt.style.opacity = p<0.15? (p/0.15) : (p>0.85? (1-(p-0.85)/0.15):1);
 }
 
+/* ---------------- optional service/test FPS counter ----------------
+   Samples the actual requestAnimationFrame rate without doing DOM work every frame.
+   Colour bands: 50+ green, <50 cyan, <40 yellow, <30 red. */
+function updateFpsCounter(ts){
+  if(!fpsCounterOn) return;
+  fpsFrameCount++;
+  if(!fpsSampleT) fpsSampleT = ts;
+  const sampleMs = ts - fpsSampleT;
+  if(sampleMs >= 500){
+    const fps = Math.round(fpsFrameCount * 1000 / sampleMs);
+    const el = document.getElementById('fpsCounter');
+    el.textContent = 'FPS '+fps;
+    el.style.color = fps < 30 ? '#ff3b3b' : fps < 40 ? '#ffd60a' : fps < 50 ? '#00e5ff' : '#3adb5c';
+    fpsFrameCount = 0;
+    fpsSampleT = ts;
+  }
+}
+
 /* ---------------- main loop ---------------- */
 function loop(ts){
   if(!lastT) lastT = ts;
@@ -6615,6 +6744,7 @@ function loop(ts){
   if(!isPaused) update(dt);
   render();
   syncHud();
+  updateFpsCounter(ts);
   updateCountdownOverlay();
   document.getElementById('btnPause').classList.toggle('show', !attractMode && (state==='countdown'||state==='playing'));
 
@@ -6624,6 +6754,7 @@ function loop(ts){
 /* ---------------- boot ---------------- */
 ['easy','intermediate','hard'].forEach(d=>{ ensureHSPopulated(d, 'race'); ensureHSPopulated(d, 'scenic'); });
 beginAttract();
+refreshPowerupMenuUI();
 requestAnimationFrame(loop);
 
 })();
