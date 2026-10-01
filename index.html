@@ -1048,10 +1048,11 @@ function updateWeather(dt){
     } else {
       weatherChangeT -= dt;
       if(weatherChangeT<=0){
-        weatherChangeT = rand(120,240); // reset to a fresh random 2-4 minute interval either way
-        const next = pickWeightedWeatherCombo(selectedStageEra, weather);
-        // weather persistence is fine and expected — only start a visible fade when the
-        // weighted pick actually landed on something different
+        weatherChangeT = rand(90,180); // reset to a fresh random 1.5-3 minute interval either way
+        const next = pickWeightedWeatherCombo(selectedStageEra, weather, true);
+        // Every scheduled RANDOM CONDITIONS roll must actually change the weather.
+        // Previously the weighted table allowed the current weather to be selected
+        // again, so several 2-4 minute rolls could legally produce no visible change.
         if(next.weather!==weather || next.night!==isNight){
           const fromWeather = weather;
           weatherTransition = {from:{weather, night:isNight}, to:next, t:0, dur:WEATHER_FADE_DUR};
@@ -1347,6 +1348,77 @@ function getUnderglowSprite(carW, carH, colorKey){
   if(!spr){ spr = buildUnderglowSprite(carW, carH, hex); underglowSpriteCache[key] = spr; }
   return spr;
 }
+
+// Night underglow silhouette: a second, softened pass of the ACTUAL player car sprite
+// is drawn above the night/fog darkness. This makes the neon follow the car's silhouette
+// rather than remaining an oval pool. It shares the existing underglow damage state, so
+// flicker and failure affect both the normal pool and this night silhouette together.
+const underglowSilhouetteCache = {};
+function getUnderglowSilhouetteSprite(carW, carH, colorKey){
+  const key = colorKey+'_'+Math.round(carW)+'_'+Math.round(carH)+'_'+player.carIdx+'_'+selectedCarEra;
+  let spr = underglowSilhouetteCache[key];
+  if(spr) return spr;
+  const hex = UNDERGLOW_COLORS[colorKey] || UNDERGLOW_COLORS.blue;
+  const {r,g,b} = hexToRgb(hex);
+  const sheet = carsSheets[selectedCarEra];
+  // Do not cache a fallback rectangle as the silhouette. Attract mode can render
+  // before the car sheet finishes loading; wait for the real sprite instead so the
+  // glow always traces the actual car outline.
+  if(!(sheet && sheet.loaded)) return null;
+  const pad = 50;
+  const w = Math.ceil(carW + pad*2), h = Math.ceil(carH + pad*2);
+  const off = document.createElement('canvas');
+  off.width = w; off.height = h;
+  const octx = off.getContext('2d');
+  const col = player.carIdx % CAR_COLS, row = (player.carIdx/CAR_COLS)|0;
+  const sx = col*CELL_W, sy = row*CELL_H;
+  const drawW = carW, drawH = carH;
+  octx.save();
+  octx.translate(w/2,h/2);
+  if(sheet && sheet.loaded){
+    octx.drawImage(sheet.img,sx,sy,CELL_W,CELL_H,-drawW/2,-drawH/2,drawW,drawH);
+  } else {
+    octx.fillStyle = CAR_FALLBACK_COLORS[player.carIdx % CAR_FALLBACK_COLORS.length];
+    octx.fillRect(-drawW/2,-drawH/2,drawW,drawH);
+  }
+  octx.restore();
+  // Convert the actual sprite alpha into a coloured luminous silhouette.
+  octx.globalCompositeOperation = 'source-in';
+  octx.fillStyle = `rgba(${r},${g},${b},0.72)`;
+  octx.fillRect(0,0,w,h);
+  // Build an OUTER halo only. The old version drew the coloured silhouette itself
+  // after the car, so the glow appeared inside/on top of the vehicle. Blur the sprite,
+  // then punch the original opaque shape out of the blurred layer. The result is a
+  // genuine outline halo surrounding the car while the real sprite remains untouched.
+  const halo = document.createElement('canvas');
+  halo.width=w; halo.height=h;
+  const hctx=halo.getContext('2d');
+  hctx.filter='blur(22px)';
+  hctx.globalAlpha=0.95;
+  hctx.drawImage(off,0,0);
+  hctx.filter='none';
+  hctx.globalCompositeOperation='destination-out';
+  hctx.globalAlpha=1;
+  hctx.drawImage(off,0,0);
+  spr={canvas:halo,originX:w/2,originY:h/2};
+  underglowSilhouetteCache[key]=spr;
+  return spr;
+}
+function drawPlayerUnderglowSilhouette(x,y,carW,carH,tilt,colorKey){
+  if(colorKey==='off' || !underglowVisible()) return;
+  const spr=getUnderglowSilhouetteSprite(carW,carH,colorKey);
+  if(!spr) return;
+  ctx.save();
+  ctx.translate(x,y);
+  if(tilt) ctx.rotate(tilt);
+  // The silhouette cache contains the actual car shape. We only want its OUTER halo
+  // here, not a coloured copy painted over the car body. The cache was already blurred,
+  // so erase the original solid silhouette from the halo and leave the luminous edge.
+  ctx.globalCompositeOperation='lighter';
+  ctx.drawImage(spr.canvas,-spr.originX,-spr.originY);
+  ctx.restore();
+}
+
 function drawPlayerUnderglow(x, y, carW, carH, tilt, colorKey){
   if(colorKey==='off') return; // UNDERGLOW OFF selected — no glow to draw, ever
   // headlight-style crash damage: a hit can knock the underglow into a dying-fluoro
@@ -1637,14 +1709,21 @@ const STAGE_WEATHER_BIAS = [
 // stay day-only — an existing performance constraint (see CONDITION_COMBOS) — so a
 // picked-night result can only land on clear or fog, same as every manual combo already
 // allows.
-function pickWeightedWeatherCombo(stageIdx, currentWeather){
+function pickWeightedWeatherCombo(stageIdx, currentWeather, forceDifferent=false){
   const nextNight = Math.random() < 0.7 ? isNight : !isNight; // 70% chance to keep the current day/night state
-  const allowed = nextNight ? ['clear','fog'] : RANDOM_WEATHERS;
+  let allowed = nextNight ? ['clear','fog'] : RANDOM_WEATHERS;
+  if(forceDifferent){
+    // RANDOM CONDITIONS must move to a genuinely different weather state on each
+    // scheduled roll. Otherwise the persistence weights could keep returning the
+    // same weather for several consecutive 2-4 minute intervals.
+    const different = allowed.filter(w=>w!==currentWeather);
+    if(different.length) allowed = different;
+  }
   const transRow = WEATHER_TRANSITION_WEIGHTS[currentWeather] || WEATHER_TRANSITION_WEIGHTS.clear;
   const bias = STAGE_WEATHER_BIAS[stageIdx] || {clear:1,rain:1,snow:1,fog:1};
   let total = 0;
   const options = allowed.map(w=>{
-    const wt = Math.max(0.1, (transRow[w]||1) * (bias[w]||1)); // never fully zero — every condition stays possible
+    const wt = Math.max(0.1, (transRow[w]||1) * (bias[w]||1)); // never fully zero — every remaining condition stays possible
     total += wt;
     return {w, wt};
   });
@@ -3814,6 +3893,17 @@ function drawPodiumFrame(cctx, w, h, alpha, elapsedSec, podCol, podRow, crowd, c
   const dx = (w-drawW)/2, dy = (h-drawH)/2;
 
   drawConfettiLayer(cctx, w, h, elapsedSec, confettiBack); // behind the podium art
+
+  // Player flag sits between the two confetti layers, behind the transparent
+  // flag window in award.png. The winners-circle sprite then frames it.
+  if(typeof selectedFlag !== 'undefined' && selectedFlag){
+    cctx.save();
+    cctx.textAlign = 'center';
+    cctx.textBaseline = 'middle';
+    cctx.font = Math.round(drawW*0.19)+'px sans-serif';
+    cctx.fillText(selectedFlag, w/2, dy + drawH*0.525);
+    cctx.restore();
+  }
 
   if(awardSheet.loaded){
     const sx = AWARD_ORIGIN_X + podCol*AWARD_CELL_W + AWARD_INSET, sy = AWARD_ORIGIN_Y + podRow*AWARD_CELL_H + AWARD_INSET;
@@ -6058,8 +6148,50 @@ function drawCheckpointStripe(){
 function drawPlayer(){
   const playerScreenY = H*0.76;
   const pulse = 1 + 0.025*Math.sin(elapsed*10.8);
-  drawPlayerUnderglow(player.x, playerScreenY, player.w||H*0.052*1.04, player.h||H*0.081*1.04, player.tilt, playerUnderglow);
+  drawPlayerUnderglowSilhouette(player.x, playerScreenY, player.w||H*0.052*1.04, player.h||H*0.081*1.04, player.tilt, playerUnderglow);
   drawCar(player.carIdx, player.x, playerScreenY, player.h||H*0.081*1.04, player.tilt, pulse);
+}
+
+/* Night-road visibility pass. The main atmosphere deliberately darkens the whole
+   world, so the lane dashes and the small alternating curb sections need to be redrawn
+   afterwards. This keeps the road readable without weakening the darkness itself. */
+const NIGHT_CURB_GLOW_COLORS_8F = [
+  [[255,251,189],[255,13,13]],
+  [[255,0,0],[255,255,255]],
+  [[255,255,255],[255,135,15]],
+  [[143,255,221],[255,162,13]],
+  [[255,239,13],[255,13,13]],
+  [[255,255,255],[255,255,255]],
+  [[13,110,255],[13,110,255]],
+  [[238,5,255],[238,5,255]],
+  [[5,255,43],[12,204,134]]
+];
+function drawNightRoadMarkers(){
+  if(!isNight) return;
+  const playerScreenY = H*0.76;
+  const worldYAtTop = scrollY + playerScreenY + BLOCK;
+  const worldYAtBottom = scrollY + playerScreenY - (H+BLOCK);
+  const rowStart = Math.floor(worldYAtBottom/BLOCK)*BLOCK;
+  const rowEnd = Math.ceil(worldYAtTop/BLOCK)*BLOCK;
+  const stageColors = NIGHT_CURB_GLOW_COLORS_8F[selectedStageEra] || NIGHT_CURB_GLOW_COLORS_8F[0];
+  const carH = player.h || H*0.081*1.04;
+  ctx.save();
+  ctx.globalCompositeOperation='lighter';
+  for(let wy=rowStart; wy<=rowEnd; wy+=BLOCK){
+    const sy = playerScreenY - (wy - scrollY);
+    if(sy < -BLOCK || sy > H+BLOCK) continue;
+    const center = roadCenterXAt(wy);
+    const half = roadHalfWidthAt(wy);
+    // Small alternating curb sections use the stage-specific colours from ROM 8c.
+    if(Math.floor(wy/18)%2!==0){
+      const alpha = weather==='fog' ? 0.84 : 0.74;
+      ctx.fillStyle='rgba('+stageColors[0][0]+','+stageColors[0][1]+','+stageColors[0][2]+','+alpha+')';
+      ctx.fillRect(center-half-7,sy,7,BLOCK+1);
+      ctx.fillStyle='rgba('+stageColors[1][0]+','+stageColors[1][1]+','+stageColors[1][2]+','+alpha+')';
+      ctx.fillRect(center+half,sy,7,BLOCK+1);
+    }
+  }
+  ctx.restore();
 }
 
 function drawHudCanvas(){
@@ -6080,6 +6212,12 @@ function render(){
   drawObjects();
   drawPlayer();
   drawWeatherOverlay();
+  // Restore road markings after the night atmosphere has darkened the scene.
+  drawNightRoadMarkers();
+  // Draw only the outer silhouette halo after the atmosphere. Because the halo has its
+  // centre punched out, it surrounds the real car instead of colouring the car itself.
+  const playerScreenY = H*0.76;
+  drawPlayerUnderglowSilhouette(player.x, playerScreenY, player.w||H*0.052*1.04, player.h||H*0.081*1.04, player.tilt, playerUnderglow);
   if(state==='crashed'){
     ctx.fillStyle='rgba(200,20,20,0.28)';
     ctx.fillRect(0,0,W,H);
